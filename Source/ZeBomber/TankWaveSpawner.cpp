@@ -97,13 +97,14 @@ void ATankWaveSpawner::SpawnWave()
 			// Assign random speed
 			float RandomSpeed = FMath::FRandRange(MinTankSpeed, MaxTankSpeed);
 			
-			// If it's our TankAI class, set the target, speed, stopping distance, and mesh rotation
+			// If it's our TankAI class, set the target, speed, stopping distance, mesh rotation, and zigzag settings
 			if (ATankAI* TankAI = Cast<ATankAI>(SpawnedTank))
 			{
-				TankAI->SetTargetLocation(TargetLocation);
 				TankAI->SetMoveSpeed(RandomSpeed);
 				TankAI->SetStoppingDistance(LineOfFireDistance);
 				TankAI->SetMeshRotation(MeshRotationOffset);
+				TankAI->SetZigzagSettings(bUseZigzagMovement, ZigzagMinDistance, ZigzagMaxDistance);
+				TankAI->SetTargetLocation(TargetLocation);
 			}
 			
 			// Bind to destruction event

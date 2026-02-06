@@ -66,6 +66,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tank Spawning", meta = (ClampMin = "0.0"))
 	float LineOfFireDistance = 500.0f;
 
+	/** Enable zigzag movement pattern (sailboat style) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tank Spawning")
+	bool bUseZigzagMovement = false;
+
+	/** Minimum distance to travel after crossing center line before turning (zigzag) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tank Spawning", meta = (ClampMin = "0.0"))
+	float ZigzagMinDistance = 200.0f;
+
+	/** Maximum distance to travel after crossing center line before turning (zigzag) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tank Spawning", meta = (ClampMin = "0.0"))
+	float ZigzagMaxDistance = 500.0f;
+
 private:
 	/** Current wave number */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Tank Spawning", meta = (AllowPrivateAccess = "true"))
