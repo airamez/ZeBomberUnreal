@@ -73,3 +73,43 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# Large temporary and cache directories
+Saved/AutoSaves/
+Saved/Autosaves/
+Saved/Logs/
+Saved/Crashes/
+Saved/Backup/
+Saved/Sandboxes/
+Saved/ShaderDebugInfo/
+Saved/Profiling/
+
+# Crash reports
+CrashReportClient/
+
+# Shader working directory
+ShaderWorkDir/
+
+# Localization intermediate files
+Localization/
+
+# Temp files
+*.tmp
+*.temp
+
+# Android build intermediates
+Intermediate/Android/
+Build/Android/
+
+# iOS build intermediates
+Intermediate/IOS/
+Build/IOS/
+
+# Linux build intermediates
+Intermediate/Linux/
+Build/Linux/
+
+# Windows build files (except necessary ones)
+*.pdb
+*.ilk
+
