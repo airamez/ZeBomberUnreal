@@ -131,6 +131,25 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight")
 	FRotator MeshRotationOffset = FRotator(0.0f, 0.0f, 0.0f);
 
+	// ==================== Rocket / Crosshair ====================
+
+	/** Blueprint class for the rocket to fire */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket")
+	TSubclassOf<AActor> RocketClass;
+
+	/** Rocket fire rate cooldown (seconds between shots) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket", meta = (ClampMin = "0.01"))
+	float RocketCooldown = 0.15f;
+
+	/** Offset from bomber nose where rockets spawn (local space) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket")
+	FVector RocketSpawnOffset = FVector(300.0f, 0.0f, -50.0f);
+
+	/** Maximum distance for crosshair raycast (units) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket", meta = (ClampMin = "1000.0"))
+	float CrosshairMaxDistance = 50000.0f;
+
+
 	// ==================== Bombing ====================
 
 	/** Blueprint class for the bomb to drop */
@@ -169,6 +188,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* DropBombAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* FireRocketAction;
+
 private:
 	/** Current pitch input (-1 to 1) */
 	float PitchInput = 0.0f;
@@ -185,6 +207,15 @@ private:
 	/** Time when last bomb was dropped */
 	float LastBombDropTime = -999.0f;
 
+	/** Time when last rocket was fired */
+	float LastRocketFireTime = -999.0f;
+
+	/** Whether fire button is held */
+	bool bFireRocketHeld = false;
+
+	/** Current crosshair world target location */
+	FVector CrosshairWorldTarget = FVector::ZeroVector;
+
 	/** Input handlers */
 	void OnPitchDown(const FInputActionValue& Value);
 	void OnPitchDownReleased(const FInputActionValue& Value);
@@ -195,8 +226,12 @@ private:
 	void OnTurnRight(const FInputActionValue& Value);
 	void OnTurnRightReleased(const FInputActionValue& Value);
 	void OnDropBomb(const FInputActionValue& Value);
+	void OnFireRocket(const FInputActionValue& Value);
+	void OnFireRocketReleased(const FInputActionValue& Value);
 
 	/** Flight update functions */
 	void UpdateFlight(float DeltaTime);
 	void DropBomb();
+	void FireRocket();
+	void UpdateCrosshair();
 };

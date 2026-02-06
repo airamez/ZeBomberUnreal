@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "BomberPawn.h"
+#include "RocketProjectile.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SceneComponent.h"
@@ -9,6 +10,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
+#include "Kismet/GameplayStatics.h"
 
 ABomberPawn::ABomberPawn()
 {
@@ -90,6 +92,16 @@ void ABomberPawn::BeginPlay()
 		}
 	}
 
+	// Show mouse cursor as crosshair
+	if (APlayerController* PC = Cast<APlayerController>(Controller))
+	{
+		PC->bShowMouseCursor = true;
+		PC->bEnableClickEvents = false;
+		PC->bEnableMouseOverEvents = false;
+		PC->CurrentMouseCursor = EMouseCursor::Crosshairs;
+		PC->DefaultMouseCursor = EMouseCursor::Crosshairs;
+	}
+
 	UE_LOG(LogTemp, Log, TEXT("BomberPawn: Initialized at altitude %.0f, speed %.0f"), StartAltitude, CurrentSpeed);
 }
 
@@ -97,6 +109,13 @@ void ABomberPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	UpdateFlight(DeltaTime);
+	UpdateCrosshair();
+
+	// Auto-fire rockets while button is held
+	if (bFireRocketHeld)
+	{
+		FireRocket();
+	}
 }
 
 void ABomberPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -137,6 +156,13 @@ void ABomberPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		if (DropBombAction)
 		{
 			EnhancedInputComponent->BindAction(DropBombAction, ETriggerEvent::Started, this, &ABomberPawn::OnDropBomb);
+		}
+
+		// Left Mouse = Fire Rocket
+		if (FireRocketAction)
+		{
+			EnhancedInputComponent->BindAction(FireRocketAction, ETriggerEvent::Triggered, this, &ABomberPawn::OnFireRocket);
+			EnhancedInputComponent->BindAction(FireRocketAction, ETriggerEvent::Completed, this, &ABomberPawn::OnFireRocketReleased);
 		}
 	}
 }
@@ -186,6 +212,16 @@ void ABomberPawn::OnTurnRightReleased(const FInputActionValue& Value)
 void ABomberPawn::OnDropBomb(const FInputActionValue& Value)
 {
 	DropBomb();
+}
+
+void ABomberPawn::OnFireRocket(const FInputActionValue& Value)
+{
+	bFireRocketHeld = true;
+}
+
+void ABomberPawn::OnFireRocketReleased(const FInputActionValue& Value)
+{
+	bFireRocketHeld = false;
 }
 
 // ==================== Flight Logic ====================
@@ -302,5 +338,97 @@ void ABomberPawn::DropBomb()
 		}
 
 		UE_LOG(LogTemp, Log, TEXT("BomberPawn: Bomb dropped at %s with speed %.0f"), *SpawnLocation.ToString(), CurrentSpeed);
+	}
+}
+
+void ABomberPawn::UpdateCrosshair()
+{
+	APlayerController* PC = Cast<APlayerController>(Controller);
+	if (!PC)
+	{
+		return;
+	}
+
+	// Get mouse position on screen and deproject to world
+	float MouseX, MouseY;
+	if (PC->GetMousePosition(MouseX, MouseY))
+	{
+		FVector WorldLocation, WorldDirection;
+		if (PC->DeprojectScreenPositionToWorld(MouseX, MouseY, WorldLocation, WorldDirection))
+		{
+			// Raycast from camera into the world
+			FVector TraceStart = WorldLocation;
+			FVector TraceEnd = WorldLocation + (WorldDirection * CrosshairMaxDistance);
+
+			FHitResult HitResult;
+			FCollisionQueryParams QueryParams;
+			QueryParams.AddIgnoredActor(this);
+
+			if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams))
+			{
+				CrosshairWorldTarget = HitResult.ImpactPoint;
+			}
+			else
+			{
+				CrosshairWorldTarget = TraceEnd;
+			}
+		}
+	}
+}
+
+void ABomberPawn::FireRocket()
+{
+	if (!RocketClass)
+	{
+		return;
+	}
+
+	// Check cooldown
+	float CurrentTime = GetWorld()->GetTimeSeconds();
+	if (CurrentTime - LastRocketFireTime < RocketCooldown)
+	{
+		return;
+	}
+	LastRocketFireTime = CurrentTime;
+
+	// Calculate spawn location (nose of the bomber)
+	FVector SpawnLocation = GetActorLocation() + GetActorTransform().TransformVector(RocketSpawnOffset);
+
+	// Calculate direction from spawn point to crosshair target
+	FVector Direction = (CrosshairWorldTarget - SpawnLocation).GetSafeNormal();
+
+	UE_LOG(LogTemp, Warning, TEXT("BomberPawn::FireRocket - SpawnLoc=%s Target=%s Dir=%s"),
+		*SpawnLocation.ToString(), *CrosshairWorldTarget.ToString(), *Direction.ToString());
+
+	// Don't fire if target is uninitialized
+	if (CrosshairWorldTarget.IsNearlyZero())
+	{
+		Direction = GetActorForwardVector();
+	}
+
+	// Don't fire backwards
+	float DotForward = FVector::DotProduct(Direction, GetActorForwardVector());
+	if (DotForward < 0.0f)
+	{
+		return;
+	}
+
+	FRotator SpawnRotation = Direction.Rotation();
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.Owner = this;
+
+	AActor* Rocket = GetWorld()->SpawnActor<AActor>(RocketClass, SpawnLocation, SpawnRotation, SpawnParams);
+
+	if (Rocket)
+	{
+		// Set flight direction if it's our RocketProjectile class
+		if (ARocketProjectile* RocketProj = Cast<ARocketProjectile>(Rocket))
+		{
+			RocketProj->SetFlightDirection(Direction);
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("BomberPawn: Rocket fired toward %s"), *CrosshairWorldTarget.ToString());
 	}
 }
