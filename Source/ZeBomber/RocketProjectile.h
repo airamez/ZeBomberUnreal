@@ -48,7 +48,7 @@ protected:
 
 	/** Mesh rotation offset to fix rocket model orientation (degrees) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket")
-	FRotator MeshRotationOffset = FRotator(0.0f, 0.0f, 0.0f);
+	FRotator MeshRotationOffset = FRotator(0.0f, 90.0f, 0.0f);
 
 private:
 	/** Called when the rocket hits something */

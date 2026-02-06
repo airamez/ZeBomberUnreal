@@ -5,6 +5,7 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 
 ARocketProjectile::ARocketProjectile()
 {
@@ -29,7 +30,7 @@ ARocketProjectile::ARocketProjectile()
 	ProjectileMovement->UpdatedComponent = CollisionComponent;
 	ProjectileMovement->InitialSpeed = RocketSpeed;
 	ProjectileMovement->MaxSpeed = RocketSpeed;
-	ProjectileMovement->bRotationFollowsVelocity = true;
+	ProjectileMovement->bRotationFollowsVelocity = false;
 	ProjectileMovement->bShouldBounce = false;
 	ProjectileMovement->ProjectileGravityScale = 0.0f; // No gravity - flies straight
 }
@@ -40,7 +41,9 @@ void ARocketProjectile::SetFlightDirection(const FVector& Direction)
 
 	if (!Dir.IsNearlyZero())
 	{
-		SetActorRotation(Dir.Rotation());
+		// Use MakeRotFromX to avoid gimbal lock when firing straight up/down
+		FRotator NewRotation = UKismetMathLibrary::MakeRotFromX(Dir);
+		SetActorRotation(NewRotation);
 		ProjectileMovement->Velocity = Dir * RocketSpeed;
 	}
 }
