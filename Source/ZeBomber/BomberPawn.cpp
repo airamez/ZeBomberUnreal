@@ -194,10 +194,14 @@ void ABomberPawn::UpdateFlight(float DeltaTime)
 {
 	FRotator CurrentRotation = GetActorRotation();
 
-	// --- Pitch ---
-	if (FMath::Abs(PitchInput) > 0.01f)
+	// Apply inertia to inputs (smooth response)
+	SmoothedPitchInput = FMath::Lerp(SmoothedPitchInput, PitchInput, 1.0f - PitchInertia);
+	SmoothedYawInput = FMath::Lerp(SmoothedYawInput, YawInput, 1.0f - YawInertia);
+
+	// --- Pitch (with inertia) ---
+	if (FMath::Abs(SmoothedPitchInput) > 0.01f)
 	{
-		float PitchDelta = PitchInput * PitchRate * DeltaTime;
+		float PitchDelta = SmoothedPitchInput * PitchRate * DeltaTime;
 		CurrentRotation.Pitch = FMath::Clamp(CurrentRotation.Pitch + PitchDelta, -MaxPitchAngle, MaxPitchAngle);
 	}
 	else
@@ -210,10 +214,10 @@ void ABomberPawn::UpdateFlight(float DeltaTime)
 		}
 	}
 
-	// --- Yaw (turning) ---
-	if (FMath::Abs(YawInput) > 0.01f)
+	// --- Yaw (turning with inertia) ---
+	if (FMath::Abs(SmoothedYawInput) > 0.01f)
 	{
-		float YawDelta = YawInput * YawRate * DeltaTime;
+		float YawDelta = SmoothedYawInput * YawRate * DeltaTime;
 		CurrentRotation.Yaw += YawDelta;
 	}
 

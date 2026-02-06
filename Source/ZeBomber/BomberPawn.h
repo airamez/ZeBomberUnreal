@@ -89,11 +89,19 @@ protected:
 
 	/** Pitch rate (degrees/sec) - how fast the nose goes up/down */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight", meta = (ClampMin = "0.0"))
-	float PitchRate = 30.0f;
+	float PitchRate = 12.0f;
+
+	/** Pitch inertia - how slowly the bomber responds (0=instant, 0.95=heavy bomber) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight", meta = (ClampMin = "0.0", ClampMax = "0.99"))
+	float PitchInertia = 0.92f;
 
 	/** Yaw rate (degrees/sec) - how fast the bomber turns left/right */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight", meta = (ClampMin = "0.0"))
-	float YawRate = 25.0f;
+	float YawRate = 15.0f;
+
+	/** Yaw inertia - how slowly the bomber responds to turning (0=instant, 0.95=heavy bomber) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight", meta = (ClampMin = "0.0", ClampMax = "0.99"))
+	float YawInertia = 0.90f;
 
 	/** Roll rate when turning (degrees/sec) - visual bank angle */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight", meta = (ClampMin = "0.0"))
@@ -165,8 +173,14 @@ private:
 	/** Current pitch input (-1 to 1) */
 	float PitchInput = 0.0f;
 
+	/** Smoothed pitch input for inertia */
+	float SmoothedPitchInput = 0.0f;
+
 	/** Current yaw input (-1 to 1) */
 	float YawInput = 0.0f;
+
+	/** Smoothed yaw input for inertia */
+	float SmoothedYawInput = 0.0f;
 
 	/** Time when last bomb was dropped */
 	float LastBombDropTime = -999.0f;
