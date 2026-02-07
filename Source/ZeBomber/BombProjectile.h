@@ -53,4 +53,7 @@ private:
 
 	/** Check for tanks in explosion radius and destroy them */
 	void DestroyTanksInRadius(const FVector& ExplosionLocation);
+
+	/** Check for helicopters in explosion radius and destroy them */
+	void DestroyHelisInRadius(const FVector& ExplosionLocation);
 };

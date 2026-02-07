@@ -2,6 +2,7 @@
 
 #include "RocketProjectile.h"
 #include "TankAI.h"
+#include "HeliAI.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -89,23 +90,53 @@ void ARocketProjectile::OnRocketHit(UPrimitiveComponent* HitComp, AActor* OtherA
 
 	UE_LOG(LogTemp, Log, TEXT("RocketProjectile: Hit %s"), *OtherActor->GetName());
 
-	// Check if we directly hit a tank
+	// Check if we directly hit a tank - rockets do NOT destroy tanks
 	if (ATankAI* Tank = Cast<ATankAI>(OtherActor))
 	{
-		UE_LOG(LogTemp, Log, TEXT("RocketProjectile: Direct hit on tank!"));
-		Tank->Destroy();
+		UE_LOG(LogTemp, Log, TEXT("RocketProjectile: Direct hit on tank - rockets cannot destroy tanks!"));
+		// Rockets do NOT destroy tanks - only bombs can destroy tanks
 	}
 
-	// Check for tanks in explosion radius
+	// Check if we directly hit a helicopter - rockets CAN destroy helicopters
+	if (AHeliAI* Heli = Cast<AHeliAI>(OtherActor))
+	{
+		UE_LOG(LogTemp, Log, TEXT("RocketProjectile: Direct hit on helicopter!"));
+		Heli->Destroy();
+	}
+
+	// Check for helicopters in explosion radius - rockets CAN destroy helicopters
 	if (ExplosionRadius > 0.0f)
 	{
-		DestroyTanksInRadius(GetActorLocation());
+		DestroyHelisInRadius(GetActorLocation());
 	}
 
 	// Destroy the rocket
 	Destroy();
 }
 
+void ARocketProjectile::DestroyHelisInRadius(const FVector& ExplosionLocation)
+{
+	// Find all HeliAI actors in the explosion radius
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHeliAI::StaticClass(), FoundActors);
+
+	for (AActor* Actor : FoundActors)
+	{
+		if (Actor && !Actor->IsPendingKillPending())
+		{
+			float Distance = FVector::Dist(ExplosionLocation, Actor->GetActorLocation());
+			if (Distance <= ExplosionRadius)
+			{
+				UE_LOG(LogTemp, Log, TEXT("RocketProjectile: Helicopter destroyed by explosion at distance %.0f"), Distance);
+				Actor->Destroy();
+			}
+		}
+	}
+}
+
+	// Rockets do NOT destroy tanks - only bombs can destroy tanks
+	// This function is kept for reference but no longer called
+	/*
 void ARocketProjectile::DestroyTanksInRadius(const FVector& ExplosionLocation)
 {
 	TArray<AActor*> FoundActors;
@@ -124,3 +155,4 @@ void ARocketProjectile::DestroyTanksInRadius(const FVector& ExplosionLocation)
 		}
 	}
 }
+	*/

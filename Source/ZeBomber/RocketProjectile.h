@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "TankAI.h"
+#include "HeliAI.h"
 #include "RocketProjectile.generated.h"
 
 UCLASS()
@@ -55,6 +57,6 @@ private:
 	UFUNCTION()
 	void OnRocketHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-	/** Check for tanks in explosion radius and destroy them */
-	void DestroyTanksInRadius(const FVector& ExplosionLocation);
+	/** Check for helicopters in explosion radius and destroy them */
+	void DestroyHelisInRadius(const FVector& ExplosionLocation);
 };

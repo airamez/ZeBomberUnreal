@@ -2,6 +2,7 @@
 
 #include "BombProjectile.h"
 #include "TankAI.h"
+#include "HeliAI.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -70,10 +71,18 @@ void ABombProjectile::OnBombHit(UPrimitiveComponent* HitComp, AActor* OtherActor
 		Tank->Destroy();
 	}
 
-	// Check for tanks in explosion radius
+	// Check if we directly hit a helicopter
+	if (AHeliAI* Heli = Cast<AHeliAI>(OtherActor))
+	{
+		UE_LOG(LogTemp, Log, TEXT("BombProjectile: Direct hit on helicopter!"));
+		Heli->Destroy();
+	}
+
+	// Check for tanks and helicopters in explosion radius
 	if (ExplosionRadius > 0.0f)
 	{
 		DestroyTanksInRadius(GetActorLocation());
+		DestroyHelisInRadius(GetActorLocation());
 	}
 
 	// Destroy the bomb
@@ -95,6 +104,14 @@ void ABombProjectile::OnBombOverlap(UPrimitiveComponent* OverlappedComp, AActor*
 		Tank->Destroy();
 		Destroy();
 	}
+
+	// Check if we hit a helicopter
+	if (AHeliAI* Heli = Cast<AHeliAI>(OtherActor))
+	{
+		UE_LOG(LogTemp, Log, TEXT("BombProjectile: Overlap hit on helicopter!"));
+		Heli->Destroy();
+		Destroy();
+	}
 }
 
 void ABombProjectile::DestroyTanksInRadius(const FVector& ExplosionLocation)
@@ -111,6 +128,26 @@ void ABombProjectile::DestroyTanksInRadius(const FVector& ExplosionLocation)
 			if (Distance <= ExplosionRadius)
 			{
 				UE_LOG(LogTemp, Log, TEXT("BombProjectile: Tank destroyed by explosion at distance %.0f"), Distance);
+				Actor->Destroy();
+			}
+		}
+	}
+}
+
+void ABombProjectile::DestroyHelisInRadius(const FVector& ExplosionLocation)
+{
+	// Find all HeliAI actors in the explosion radius
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHeliAI::StaticClass(), FoundActors);
+
+	for (AActor* Actor : FoundActors)
+	{
+		if (Actor && !Actor->IsPendingKillPending())
+		{
+			float Distance = FVector::Dist(ExplosionLocation, Actor->GetActorLocation());
+			if (Distance <= ExplosionRadius)
+			{
+				UE_LOG(LogTemp, Log, TEXT("BombProjectile: Helicopter destroyed by explosion at distance %.0f"), Distance);
 				Actor->Destroy();
 			}
 		}
