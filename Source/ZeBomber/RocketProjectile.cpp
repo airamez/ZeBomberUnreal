@@ -74,6 +74,12 @@ void ARocketProjectile::BeginPlay()
 		RocketMesh->SetRelativeRotation(MeshRotationOffset);
 	}
 
+	// Play fire sound when rocket spawns
+	if (FireSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
+	}
+
 	UE_LOG(LogTemp, Warning, TEXT("RocketProjectile: BeginPlay - Velocity=%s Speed=%.0f"),
 		*ProjectileMovement->Velocity.ToString(), RocketSpeed);
 }

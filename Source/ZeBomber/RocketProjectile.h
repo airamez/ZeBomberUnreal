@@ -8,6 +8,7 @@
 #include "TankAI.h"
 #include "HeliAI.h"
 #include "ExplosionComponent.h"
+#include "Sound/SoundBase.h"
 #include "RocketProjectile.generated.h"
 
 UCLASS()
@@ -56,6 +57,10 @@ protected:
 	/** Explosion component for customizable explosion effects */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rocket")
 	UExplosionComponent* ExplosionComp;
+
+	/** Sound to play when rocket is fired */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket")
+	USoundBase* FireSound;
 
 private:
 	/** Called when the rocket hits something */
