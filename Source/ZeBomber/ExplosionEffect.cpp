@@ -39,6 +39,7 @@ AExplosionEffect::AExplosionEffect()
     DecalComponent = CreateDefaultSubobject<UDecalComponent>(TEXT("DecalComponent"));
     DecalComponent->SetupAttachment(RootComponent);
     DecalComponent->SetActive(false);
+    DecalComponent->SetVisibleFlag(false); // Hide until valid decal is set
 }
 
 void AExplosionEffect::BeginPlay()
