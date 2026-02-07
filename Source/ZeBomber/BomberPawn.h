@@ -213,6 +213,12 @@ private:
 	/** Whether fire button is held */
 	bool bFireRocketHeld = false;
 
+	/** Warmup complete flag - prevents input on first frames */
+	bool bWarmupComplete = false;
+
+	/** Warmup countdown timer */
+	float WarmupTimer = 1.0f;
+
 	/** Current crosshair world target location */
 	FVector CrosshairWorldTarget = FVector::ZeroVector;
 

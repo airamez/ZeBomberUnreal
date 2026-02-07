@@ -55,6 +55,12 @@ void ABomberPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UE_LOG(LogTemp, Warning, TEXT("BomberPawn: BeginPlay started"));
+
+	// Warmup timer to prevent input from firing on first frames
+	bWarmupComplete = false;
+	WarmupTimer = 1.0f;
+
 	// Set starting altitude
 	FVector StartLocation = GetActorLocation();
 	StartLocation.Z = StartAltitude;
@@ -70,6 +76,20 @@ void ABomberPawn::BeginPlay()
 		CameraArm->SetRelativeRotation(FRotator(CameraPitchAngle, 0.0f, 0.0f));
 		CameraArm->CameraLagSpeed = CameraLagSpeed;
 		CameraArm->CameraRotationLagSpeed = CameraRotationLagSpeed;
+		UE_LOG(LogTemp, Warning, TEXT("BomberPawn: CameraArm configured - Distance=%.0f, Pitch=%.1f"), CameraDistance, CameraPitchAngle);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("BomberPawn: CameraArm is NULL!"));
+	}
+
+	if (FollowCamera)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BomberPawn: FollowCamera exists"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("BomberPawn: FollowCamera is NULL!"));
 	}
 
 	// Apply mesh rotation offset via pivot (not affected by Blueprint overrides)
@@ -80,6 +100,16 @@ void ABomberPawn::BeginPlay()
 			MeshRotationOffset.Pitch, MeshRotationOffset.Yaw, MeshRotationOffset.Roll);
 	}
 
+	// Check controller
+	if (Controller)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BomberPawn: Controller is valid - %s"), *Controller->GetName());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("BomberPawn: Controller is NULL!"));
+	}
+
 	// Add input mapping context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -88,8 +118,21 @@ void ABomberPawn::BeginPlay()
 			if (BomberMappingContext)
 			{
 				Subsystem->AddMappingContext(BomberMappingContext, 0);
+				UE_LOG(LogTemp, Warning, TEXT("BomberPawn: Mapping context added successfully"));
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("BomberPawn: BomberMappingContext is NULL!"));
 			}
 		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("BomberPawn: EnhancedInputLocalPlayerSubsystem is NULL!"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("BomberPawn: PlayerController cast failed!"));
 	}
 
 	// Show mouse cursor as crosshair
@@ -108,6 +151,19 @@ void ABomberPawn::BeginPlay()
 void ABomberPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// Warmup period - prevent any actions on first frames
+	if (!bWarmupComplete)
+	{
+		WarmupTimer -= DeltaTime;
+		if (WarmupTimer <= 0.0f)
+		{
+			bWarmupComplete = true;
+			UE_LOG(LogTemp, Warning, TEXT("BomberPawn: Warmup complete, input enabled"));
+		}
+		return;
+	}
+
 	UpdateFlight(DeltaTime);
 	UpdateCrosshair();
 
@@ -211,11 +267,22 @@ void ABomberPawn::OnTurnRightReleased(const FInputActionValue& Value)
 
 void ABomberPawn::OnDropBomb(const FInputActionValue& Value)
 {
+	if (!bWarmupComplete)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BomberPawn: OnDropBomb BLOCKED during warmup"));
+		return;
+	}
 	DropBomb();
 }
 
 void ABomberPawn::OnFireRocket(const FInputActionValue& Value)
 {
+	if (!bWarmupComplete)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BomberPawn: OnFireRocket BLOCKED during warmup"));
+		return;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("BomberPawn: OnFireRocket triggered"));
 	bFireRocketHeld = true;
 }
 
