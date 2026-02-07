@@ -8,6 +8,9 @@ AHeliAI::AHeliAI()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	// Create explosion component for death effects
+	ExplosionComp = CreateDefaultSubobject<UExplosionComponent>(TEXT("ExplosionComp"));
+
 	// Create scene root component
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	RootComponent = SceneRoot;
@@ -43,6 +46,17 @@ void AHeliAI::BeginPlay()
 	{
 		UE_LOG(LogTemp, Error, TEXT("HeliAI: ERROR - HeliMesh is NULL!"));
 	}
+}
+
+void AHeliAI::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// Spawn explosion effect when helicopter is destroyed
+	if (ExplosionComp && EndPlayReason == EEndPlayReason::Destroyed)
+	{
+		ExplosionComp->SpawnExplosionAtOwner();
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AHeliAI::Tick(float DeltaTime)

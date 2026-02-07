@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "ExplosionComponent.h"
 #include "BombProjectile.generated.h"
 
 UCLASS()
@@ -41,6 +42,10 @@ protected:
 	/** Mesh rotation offset to fix bomb model orientation (degrees) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bomb")
 	FRotator MeshRotationOffset = FRotator(0.0f, 0.0f, 0.0f);
+
+	/** Explosion component for customizable explosion effects */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bomb")
+	UExplosionComponent* ExplosionComp;
 
 private:
 	/** Called when the bomb hits something */

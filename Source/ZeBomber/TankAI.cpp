@@ -9,6 +9,9 @@ ATankAI::ATankAI()
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 
+	// Create explosion component for death effects
+	ExplosionComp = CreateDefaultSubobject<UExplosionComponent>(TEXT("ExplosionComp"));
+
 	// Create scene component as root (for actor rotation/movement)
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	RootComponent = SceneRoot;
@@ -28,6 +31,17 @@ ATankAI::ATankAI()
 void ATankAI::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void ATankAI::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// Spawn explosion effect when tank is destroyed
+	if (ExplosionComp && EndPlayReason == EEndPlayReason::Destroyed)
+	{
+		ExplosionComp->SpawnExplosionAtOwner();
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void ATankAI::Tick(float DeltaTime)

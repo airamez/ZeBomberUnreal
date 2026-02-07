@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "ExplosionComponent.h"
 #include "TankAI.generated.h"
 
 UCLASS()
@@ -12,11 +13,16 @@ class ZEBOMBER_API ATankAI : public APawn
 	GENERATED_BODY()
 
 public:
+	/** Explosion component for death effects */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tank")
+	UExplosionComponent* ExplosionComp;
+
 	ATankAI();
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	/** The skeletal mesh component for the tank */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tank")

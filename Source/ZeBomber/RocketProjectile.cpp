@@ -12,6 +12,9 @@ ARocketProjectile::ARocketProjectile()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	// Create explosion component
+	ExplosionComp = CreateDefaultSubobject<UExplosionComponent>(TEXT("ExplosionComp"));
+
 	// Create collision sphere as root
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComponent"));
 	CollisionComponent->InitSphereRadius(20.0f);
@@ -90,24 +93,33 @@ void ARocketProjectile::OnRocketHit(UPrimitiveComponent* HitComp, AActor* OtherA
 
 	UE_LOG(LogTemp, Log, TEXT("RocketProjectile: Hit %s"), *OtherActor->GetName());
 
-	// Check if we directly hit a tank - rockets do NOT destroy tanks
-	if (ATankAI* Tank = Cast<ATankAI>(OtherActor))
-	{
-		UE_LOG(LogTemp, Log, TEXT("RocketProjectile: Direct hit on tank - rockets cannot destroy tanks!"));
-		// Rockets do NOT destroy tanks - only bombs can destroy tanks
-	}
-
-	// Check if we directly hit a helicopter - rockets CAN destroy helicopters
+	// Check if we directly hit a helicopter - rockets CAN destroy helicopters and show explosion
 	if (AHeliAI* Heli = Cast<AHeliAI>(OtherActor))
 	{
 		UE_LOG(LogTemp, Log, TEXT("RocketProjectile: Direct hit on helicopter!"));
 		Heli->Destroy();
-	}
 
-	// Check for helicopters in explosion radius - rockets CAN destroy helicopters
-	if (ExplosionRadius > 0.0f)
+		// Check for other helicopters in explosion radius
+		if (ExplosionRadius > 0.0f)
+		{
+			DestroyHelisInRadius(GetActorLocation());
+		}
+
+		// Spawn explosion effect only when hitting helicopter
+		if (ExplosionComp)
+		{
+			ExplosionComp->SpawnExplosion(GetActorLocation(), Hit.Normal);
+		}
+	}
+	else if (ATankAI* Tank = Cast<ATankAI>(OtherActor))
 	{
-		DestroyHelisInRadius(GetActorLocation());
+		UE_LOG(LogTemp, Log, TEXT("RocketProjectile: Direct hit on tank - rockets cannot destroy tanks!"));
+		// Rockets do NOT destroy tanks - just disappear silently
+	}
+	else
+	{
+		// Hit ground or other object - just destroy silently, no explosion
+		UE_LOG(LogTemp, Log, TEXT("RocketProjectile: Hit ground/object - no explosion"));
 	}
 
 	// Destroy the rocket

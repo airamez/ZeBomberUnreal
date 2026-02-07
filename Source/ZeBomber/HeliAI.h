@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "ExplosionComponent.h"
 #include "HeliAI.generated.h"
 
 UCLASS()
@@ -12,11 +13,16 @@ class ZEBOMBER_API AHeliAI : public APawn
 	GENERATED_BODY()
 
 public:
+	/** Explosion component for death effects */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Helicopter")
+	UExplosionComponent* ExplosionComp;
+
 	AHeliAI();
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	/** The static mesh component for the helicopter */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Helicopter")

@@ -7,6 +7,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "TankAI.h"
 #include "HeliAI.h"
+#include "ExplosionComponent.h"
 #include "RocketProjectile.generated.h"
 
 UCLASS()
@@ -51,6 +52,10 @@ protected:
 	/** Mesh rotation offset to fix rocket model orientation (degrees) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket")
 	FRotator MeshRotationOffset = FRotator(0.0f, 90.0f, 0.0f);
+
+	/** Explosion component for customizable explosion effects */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rocket")
+	UExplosionComponent* ExplosionComp;
 
 private:
 	/** Called when the rocket hits something */

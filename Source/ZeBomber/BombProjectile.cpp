@@ -6,10 +6,14 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "ExplosionComponent.h"
 
 ABombProjectile::ABombProjectile()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	// Create explosion component
+	ExplosionComp = CreateDefaultSubobject<UExplosionComponent>(TEXT("ExplosionComp"));
 
 	// Create collision sphere as root
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComponent"));
@@ -83,6 +87,12 @@ void ABombProjectile::OnBombHit(UPrimitiveComponent* HitComp, AActor* OtherActor
 	{
 		DestroyTanksInRadius(GetActorLocation());
 		DestroyHelisInRadius(GetActorLocation());
+	}
+
+	// Spawn explosion effect before destroying
+	if (ExplosionComp)
+	{
+		ExplosionComp->SpawnExplosion(GetActorLocation(), Hit.Normal);
 	}
 
 	// Destroy the bomb
