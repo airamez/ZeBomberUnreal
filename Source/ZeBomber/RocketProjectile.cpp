@@ -113,13 +113,21 @@ void ARocketProjectile::OnRocketHit(UPrimitiveComponent* HitComp, AActor* OtherA
 	}
 	else if (ATankAI* Tank = Cast<ATankAI>(OtherActor))
 	{
-		UE_LOG(LogTemp, Log, TEXT("RocketProjectile: Direct hit on tank - rockets cannot destroy tanks!"));
-		// Rockets do NOT destroy tanks - just disappear silently
+		UE_LOG(LogTemp, Log, TEXT("RocketProjectile: Direct hit on tank - tank not destroyed but rocket explodes!"));
+		// Rockets do NOT destroy tanks but they DO explode
+		if (ExplosionComp)
+		{
+			ExplosionComp->SpawnExplosion(GetActorLocation(), Hit.Normal);
+		}
 	}
 	else
 	{
-		// Hit ground or other object - just destroy silently, no explosion
-		UE_LOG(LogTemp, Log, TEXT("RocketProjectile: Hit ground/object - no explosion"));
+		// Hit ground or other object - spawn explosion
+		UE_LOG(LogTemp, Log, TEXT("RocketProjectile: Hit ground/object - exploding"));
+		if (ExplosionComp)
+		{
+			ExplosionComp->SpawnExplosion(GetActorLocation(), Hit.Normal);
+		}
 	}
 
 	// Destroy the rocket

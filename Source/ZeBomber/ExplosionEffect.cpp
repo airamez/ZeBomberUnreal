@@ -22,6 +22,7 @@ AExplosionEffect::AExplosionEffect()
     ParticleComponent = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ParticleComponent"));
     ParticleComponent->SetupAttachment(RootComponent);
     ParticleComponent->bAutoActivate = false;
+    ParticleComponent->SetVisibleFlag(false); // Hide until valid asset is set
 
     // Create Niagara component (for Niagara systems)
     NiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraComponent"));
@@ -167,6 +168,7 @@ void AExplosionEffect::SpawnParticleEffect()
     }
 
     ParticleComponent->SetTemplate(CurrentConfig.ParticleSystem);
+    ParticleComponent->SetVisibleFlag(true);
     ParticleComponent->ActivateSystem(true);
 }
 
