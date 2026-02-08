@@ -18,12 +18,55 @@ The **FighterPawn** is a first-person cockpit-view pawn. The camera sits at the 
 | **D** | Turn right |
 | **Mouse** | Aim rocket crosshair (white) |
 | **Left Click** | Fire rockets (hold for auto-fire) |
+| **Right Click (hold)** | Free-look camera (look around while flying) |
 | **Space** | Drop bomb |
+| **Mouse Scroll Up/Down** | Zoom radar in/out |
 
 ### Crosshairs
 
 - **White + crosshair** — Follows the mouse cursor. Rockets fire toward this point.
 - **Red circle crosshair** — Predicted bomb impact point. Automatically calculated from current speed, altitude, direction, and gravity.
+
+### Free-Look Camera
+
+Hold **Right Mouse Button** to look around independently of flight direction. Release to snap back to forward view.
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| **Free Look Max Yaw** | Maximum left/right look angle (degrees) | 90 |
+| **Free Look Max Pitch** | Maximum up/down look angle (degrees) | 80 |
+| **Free Look Return Speed** | How fast camera returns to forward when RMB released | 5.0 |
+| **Aim Sensitivity** | Base mouse sensitivity for both aiming and free-look | 2.5 |
+| **Free Look Sensitivity Multiplier** | Multiplies base sensitivity for free-look only | 3.0 |
+
+#### Free-Look Tuning
+- **Faster free-look:** Increase `Free Look Sensitivity Multiplier` (e.g., 5.0 for very fast)
+- **Slower free-look:** Decrease `Free Look Sensitivity Multiplier` (e.g., 1.0 for same as aiming)
+- **Wider look angles:** Increase `Free Look Max Yaw` and `Free Look Max Pitch`
+- **Quicker snap-back:** Increase `Free Look Return Speed`
+
+### Radar System
+
+A square radar display in the top-right corner shows enemies within range. The radar rotates with the player's heading so "up" on radar is always forward.
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| **Radar World Range** | How far the radar can detect enemies (units) | 8000 |
+| **Radar Radius** | Visual size of radar on screen (pixels) | 120 |
+| **Radar Zoom** | Current zoom level (1.0 = default, lower = zoomed in) | 1.0 |
+| **Radar Zoom Step** | How much zoom changes per scroll | 0.15 |
+| **Radar Zoom Min/Max** | Zoom limits | 0.2 / 3.0 |
+
+#### Radar Elements
+- **Blue triangle** — Player (fighter) at center, pointing forward
+- **Red diamond dots** — Tanks on the ground
+- **Yellow circle dots** — Helicopters (with vertical height bar below)
+- **Square border** — Outer radar boundary (zooms with range)
+- **Concentric rings** — Distance markers (66% and 33% of range)
+
+#### Radar Controls
+- **Mouse Scroll Up** — Zoom in (see nearby enemies in more detail)
+- **Mouse Scroll Down** — Zoom out (see farther enemies)
 
 ---
 
