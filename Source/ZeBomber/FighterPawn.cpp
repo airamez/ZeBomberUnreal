@@ -442,7 +442,7 @@ void AFighterPawn::UpdateFreeLook(float DeltaTime)
 	{
 		// Use cached frame mouse delta for free-look rotation
 		FreeLookRotation.Yaw += FrameMouseDeltaX * FreeLookSensitivity;
-		FreeLookRotation.Pitch -= FrameMouseDeltaY * FreeLookSensitivity;
+		FreeLookRotation.Pitch += FrameMouseDeltaY * FreeLookSensitivity;
 
 		// Clamp free-look angles
 		FreeLookRotation.Yaw = FMath::Clamp(FreeLookRotation.Yaw, -FreeLookMaxYaw, FreeLookMaxYaw);
