@@ -285,6 +285,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bombing", meta = (ClampMin = "0.0"))
 	float BombDropSpeed = 0.0f;
 
+	/** Horizontal speed added to the bomb on drop (units/sec) - helps reach distant targets */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bombing", meta = (ClampMin = "0.0"))
+	float BombHorizontalSpeed = 500.0f;
+
 	/** Cooldown between bomb drops (seconds) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bombing", meta = (ClampMin = "0.0"))
 	float BombCooldown = 0.5f;

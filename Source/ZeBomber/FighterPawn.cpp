@@ -365,6 +365,9 @@ void AFighterPawn::OnTurnRightReleased(const FInputActionValue& Value)
 
 void AFighterPawn::OnDropBomb(const FInputActionValue& Value)
 {
+	UE_LOG(LogTemp, Warning, TEXT("FighterPawn: OnDropBomb called - Warmup: %s, GameState: %d"), 
+		bWarmupComplete ? TEXT("true") : TEXT("false"), (int32)CurrentGameState);
+	
 	if (!bWarmupComplete) return;
 	if (CurrentGameState != EGameState::Playing) return;
 	DropBomb();
@@ -673,9 +676,9 @@ void AFighterPawn::UpdateBombImpactPrediction()
 	/*
 	 * Predict where a bomb dropped NOW would land.
 	 *
-	 * The bomb inherits the airplane's velocity and then falls under gravity.
-	 *   Horizontal velocity = airplane forward * CurrentSpeed  (constant, no drag)
-	 *   Vertical component  = airplane forward.Z * CurrentSpeed (initial)
+	 * The bomb inherits the airplane's velocity plus additional forward speed and then falls under gravity.
+	 *   Total forward velocity = airplane forward * (CurrentSpeed + BombDropSpeed + BombHorizontalSpeed)
+	 *   Vertical component  = velocity.Z * CurrentSpeed (initial)
 	 *                         + 0.5 * g * t^2 (gravity pulls it down)
 	 *
 	 * We solve for t when Z reaches ground (Z = 0) using the quadratic formula,
@@ -683,7 +686,9 @@ void AFighterPawn::UpdateBombImpactPrediction()
 	 */
 
 	FVector BombOrigin = GetActorLocation() + GetActorTransform().TransformVector(BombSpawnOffset);
-	FVector Velocity = GetActorForwardVector() * (CurrentSpeed + BombDropSpeed);
+	
+	// Calculate total bomb velocity with additional forward speed
+	FVector Velocity = GetActorForwardVector() * (CurrentSpeed + BombDropSpeed + BombHorizontalSpeed);
 
 	float Vz = Velocity.Z;
 	float H = BombOrigin.Z; // height above ground (ground = Z 0)
@@ -747,6 +752,8 @@ void AFighterPawn::UpdateBombImpactPrediction()
 
 void AFighterPawn::DropBomb()
 {
+	UE_LOG(LogTemp, Warning, TEXT("FighterPawn: DropBomb called"));
+	
 	if (!BombClass)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("FighterPawn: No BombClass assigned!"));
@@ -779,8 +786,11 @@ void AFighterPawn::DropBomb()
 			BombPrimitive->SetSimulatePhysics(true);
 			BombPrimitive->SetEnableGravity(true);
 
-			FVector BomberVelocity = GetActorForwardVector() * (CurrentSpeed + BombDropSpeed);
-			BombPrimitive->SetPhysicsLinearVelocity(BomberVelocity);
+			// Calculate bomb velocity with additional forward speed for distant targets
+			FVector ForwardVelocity = GetActorForwardVector() * (CurrentSpeed + BombDropSpeed + BombHorizontalSpeed);
+			FVector TotalBombVelocity = ForwardVelocity;
+			
+			BombPrimitive->SetPhysicsLinearVelocity(TotalBombVelocity);
 		}
 
 		// Play bomb release sound
