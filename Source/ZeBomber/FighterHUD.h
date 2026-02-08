@@ -250,4 +250,8 @@ private:
 
 	/** Cached HUD font */
 	UFont* HUDFont = nullptr;
+
+	/** Monospace font for instructions (military style) */
+	UPROPERTY(EditAnywhere, Category = "HUD|Text")
+	UFont* InstructionsFont = nullptr;
 };

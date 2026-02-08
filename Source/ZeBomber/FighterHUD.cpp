@@ -17,6 +17,31 @@ AFighterHUD::AFighterHUD()
 	{
 		HUDFont = FontObj.Object;
 	}
+
+	// Load monospace font for instructions (military style)
+	// Try the Default font which should be monospace
+	static ConstructorHelpers::FObjectFinder<UFont> MonoFontObj(TEXT("/Engine/EngineFonts/Default"));
+	if (MonoFontObj.Succeeded())
+	{
+		InstructionsFont = MonoFontObj.Object;
+		UE_LOG(LogTemp, Warning, TEXT("FighterHUD: Loaded Default font for instructions"));
+	}
+	else
+	{
+		// Try the Roboto font as fallback
+		static ConstructorHelpers::FObjectFinder<UFont> RobotoFontObj(TEXT("/Engine/EngineFonts/Roboto"));
+		if (RobotoFontObj.Succeeded())
+		{
+			InstructionsFont = RobotoFontObj.Object;
+			UE_LOG(LogTemp, Warning, TEXT("FighterHUD: Loaded Roboto font for instructions"));
+		}
+		else
+		{
+			// Final fallback to regular font
+			InstructionsFont = HUDFont;
+			UE_LOG(LogTemp, Warning, TEXT("FighterHUD: Using regular HUD font for instructions (fallback)"));
+		}
+	}
 }
 
 void AFighterHUD::DrawHUD()
@@ -162,7 +187,7 @@ void AFighterHUD::DrawSettingsInfo(AFighterPawn* Fighter)
 	float Y = CanvasHeight - ScreenMargin - PanelHeight;
 
 	// Draw semi-transparent background panel
-	FLinearColor PanelColor(0.0f, 0.0f, 0.0f, 0.4f);
+	FLinearColor PanelColor(0.0f, 0.0f, 0.0f, 0.7f);
 	Canvas->K2_DrawBox(FVector2D(X - 4.0f, Y - 4.0f), FVector2D(PanelWidth + 8.0f, PanelHeight + 8.0f), 1.0f, PanelColor);
 
 	// Sound Volume
@@ -666,14 +691,29 @@ void AFighterHUD::DrawGameScreen(AFighterPawn* Fighter)
 	{
 		DrawCenteredText(TEXT("ZEBOMBER"), CY - 220.0f, TitleColor, 2.5f);
 
-		// Split instructions text into lines and draw left-aligned
+		// Draw background panel for instructions
 		TArray<FString> Lines;
 		Fighter->GetInstructionsText().ParseIntoArrayLines(Lines);
+		float PanelWidth = 520.0f;
+		float PanelHeight = Lines.Num() * 20.0f + 40.0f;
+		float PanelX = InstructionsX - 20.0f;
+		float PanelY = CY - 170.0f;
+		
+		FLinearColor PanelColor(0.1f, 0.1f, 0.1f, 0.9f);
+		FCanvasTileItem TileItem(FVector2D(PanelX, PanelY), FVector2D(PanelWidth, PanelHeight), PanelColor);
+		TileItem.BlendMode = SE_BLEND_Translucent;
+		Canvas->DrawItem(TileItem);
+
+		// Split instructions text into lines and draw left-aligned with military styling
 		float LineY = CY - 150.0f;
 		for (const FString& Line : Lines)
 		{
-			DrawLeftAlignedText(Line, InstructionsX, LineY, TextColor, 0.9f);
-			LineY += 20.0f;
+			FCanvasTextItem TextItem(FVector2D(InstructionsX, LineY), FText::FromString(Line), InstructionsFont, TextColor);
+			TextItem.Scale = FVector2D(1.1f, 1.1f);
+			TextItem.bOutlined = true;
+			TextItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.8f);
+			Canvas->DrawItem(TextItem);
+			LineY += 18.0f; // Tighter line spacing
 		}
 
 		DrawCenteredText(StartMessage, CY + 180.0f, PromptColor, 1.3f);
@@ -682,14 +722,29 @@ void AFighterHUD::DrawGameScreen(AFighterPawn* Fighter)
 	{
 		DrawCenteredText(PauseTitle, CY - 220.0f, TitleColor, 2.5f);
 
-		// Show instructions left-aligned
+		// Draw background panel for instructions
 		TArray<FString> Lines;
 		Fighter->GetInstructionsText().ParseIntoArrayLines(Lines);
+		float PanelWidth = 520.0f;
+		float PanelHeight = Lines.Num() * 18.0f + 40.0f;
+		float PanelX = InstructionsX - 20.0f;
+		float PanelY = CY - 170.0f;
+		
+		FLinearColor PanelColor(0.1f, 0.1f, 0.1f, 0.9f);
+		FCanvasTileItem TileItem(FVector2D(PanelX, PanelY), FVector2D(PanelWidth, PanelHeight), PanelColor);
+		TileItem.BlendMode = SE_BLEND_Translucent;
+		Canvas->DrawItem(TileItem);
+
+		// Show instructions left-aligned with military styling
 		float LineY = CY - 150.0f;
 		for (const FString& Line : Lines)
 		{
-			DrawLeftAlignedText(Line, InstructionsX, LineY, TextColor, 0.85f);
-			LineY += 18.0f;
+			FCanvasTextItem TextItem(FVector2D(InstructionsX, LineY), FText::FromString(Line), InstructionsFont, TextColor);
+			TextItem.Scale = FVector2D(1.1f, 1.1f);
+			TextItem.bOutlined = true;
+			TextItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.8f);
+			Canvas->DrawItem(TextItem);
+			LineY += 18.0f; // Tighter line spacing
 		}
 
 		// Place resume/quit below instructions with some spacing

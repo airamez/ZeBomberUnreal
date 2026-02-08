@@ -415,26 +415,18 @@ private:
 	/** Instructions text (editable in Blueprint or C++) */
 	UPROPERTY(EditAnywhere, Category = "Game")
 	FString InstructionsText =
-		TEXT("========================================\n")
-		TEXT("         ZEBOMBER - MISSION BRIEFING\n")
-		TEXT("========================================\n")
+		TEXT("INSTRUCTIONS\n")
 		TEXT("\n")
-		TEXT("Defend the base from waves of attacking enemies!\n")
+		TEXT("  - Control: W S A D\n")
+		TEXT("  - Fire rockets: Left Mouse\n")
+		TEXT("  - Drop bombs: Space\n")
+		TEXT("  - Look around: Right Mouse\n")
+		TEXT("  - Zoom radar: Mouse Scroll\n")
+		TEXT("  - Toggle HUD: Toggle jet HUD on/off\n")
+		TEXT("  - Pause game: ESC\n")
 		TEXT("\n")
-		TEXT("CONTROLS:\n")
-		TEXT("  W / S / A / D  -  Control the airplane\n")
-		TEXT("  Left Mouse     -  Fire rockets\n")
-		TEXT("  Space          -  Drop bombs\n")
-		TEXT("  Right Mouse    -  Look around (free-look)\n")
-		TEXT("  Mouse Scroll   -  Zoom radar in/out\n")
-		TEXT("  /              -  Toggle jet HUD on/off\n")
-		TEXT("  ESC            -  Pause game\n")
-		TEXT("\n")
-		TEXT("TIPS:\n")
 		TEXT("  - Only bombs destroy tanks!\n")
-		TEXT("  - Rockets can destroy helicopters\n")
-		TEXT("  - If the base HP reaches zero, you lose the game!\n")
-		TEXT("  - Destroy all enemies in a wave to advance");
+		TEXT("  - If the base HP reaches zero, you lose the game!\n");
 
 	/** Sound volume (0.0 - 1.0) */
 	float SoundVolume = 0.5f;
