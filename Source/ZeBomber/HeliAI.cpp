@@ -1,8 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "HeliAI.h"
+#include "FighterPawn.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 AHeliAI::AHeliAI()
 {
@@ -71,6 +73,25 @@ void AHeliAI::Tick(float DeltaTime)
 	// Move and rotate toward target
 	MoveTowardTarget(DeltaTime);
 	RotateTowardTarget(DeltaTime);
+
+	// Fire at base when stopped at line of fire
+	if (HasReachedTarget() && !bIsFiring)
+	{
+		bIsFiring = true;
+		FireTimer = RateOfFire;
+		UE_LOG(LogTemp, Log, TEXT("HeliAI: Reached target! Starting fire at base. Dist2D=%.1f, StopDist=%.1f"),
+			FVector::Dist2D(GetActorLocation(), TargetLocation), StoppingDistance);
+	}
+
+	if (bIsFiring)
+	{
+		FireTimer -= DeltaTime;
+		if (FireTimer <= 0.0f)
+		{
+			FireAtBase();
+			FireTimer = RateOfFire;
+		}
+	}
 }
 
 void AHeliAI::SetTargetLocation(const FVector& NewTarget)
@@ -114,6 +135,11 @@ void AHeliAI::SetFlyHeight(float NewHeight)
 	SetActorLocation(CurrentLocation);
 }
 
+void AHeliAI::SetRateOfFire(float Rate)
+{
+	RateOfFire = FMath::Max(0.1f, Rate);
+}
+
 bool AHeliAI::HasReachedTarget() const
 {
 	if (!bTargetSet)
@@ -145,6 +171,15 @@ void AHeliAI::MoveTowardTarget(float DeltaTime)
 	NewLocation.Z = FlyHeight; // Maintain fly height
 
 	SetActorLocation(NewLocation);
+}
+
+void AHeliAI::FireAtBase()
+{
+	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (AFighterPawn* Fighter = Cast<AFighterPawn>(PlayerPawn))
+	{
+		Fighter->DamageBase(1);
+	}
 }
 
 void AHeliAI::RotateTowardTarget(float DeltaTime)

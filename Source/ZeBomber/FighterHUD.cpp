@@ -31,6 +31,15 @@ void AFighterHUD::DrawHUD()
 	AFighterPawn* Fighter = Cast<AFighterPawn>(PC->GetPawn());
 	if (!Fighter) return;
 
+	EGameState State = Fighter->GetGameState();
+
+	// Draw game state screens (instructions, pause, game over, wave end)
+	if (State != EGameState::Playing)
+	{
+		DrawGameScreen(Fighter);
+		return;
+	}
+
 	// ==================== RED Bomb Impact Crosshair ====================
 	{
 		FVector BombImpact = Fighter->GetBombImpactPoint();
@@ -80,10 +89,16 @@ void AFighterHUD::DrawHUD()
 		DrawJetHUD(Fighter);
 	}
 
+	// ==================== Speed & Altitude (center) ====================
+	DrawSpeedAltitude(Fighter);
+
 	// ==================== HUD Text & Radar ====================
 	DrawSettingsInfo(Fighter);
 	DrawScoreInfo(Fighter);
 	DrawRadar(Fighter);
+
+	// ==================== Damage Flash ====================
+	DrawDamageFlash(Fighter);
 }
 
 void AFighterHUD::DrawCircle(float CenterX, float CenterY, float Radius, int32 Segments, FLinearColor Color, float Thickness)
@@ -142,7 +157,7 @@ void AFighterHUD::DrawSettingsInfo(AFighterPawn* Fighter)
 
 	// Position at bottom-right
 	float PanelWidth = 300.0f;
-	float PanelHeight = LineSpacing * 3.0f + 16.0f;
+	float PanelHeight = LineSpacing * 5.0f + 16.0f;
 	float X = CanvasWidth - ScreenMargin - PanelWidth;
 	float Y = CanvasHeight - ScreenMargin - PanelHeight;
 
@@ -178,6 +193,24 @@ void AFighterHUD::DrawSettingsInfo(AFighterPawn* Fighter)
 	HudItem.bOutlined = true;
 	HudItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
 	Canvas->DrawItem(HudItem);
+
+	Y += LineSpacing;
+
+	// Right Mouse hint
+	FCanvasTextItem RMBItem(FVector2D(X, Y), FText::FromString(TEXT("Right Mouse: Look around")), HUDFont, SettingsTextColor);
+	RMBItem.Scale = FVector2D(TextScale, TextScale);
+	RMBItem.bOutlined = true;
+	RMBItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
+	Canvas->DrawItem(RMBItem);
+
+	Y += LineSpacing;
+
+	// Mouse Scroll hint
+	FCanvasTextItem ScrollItem(FVector2D(X, Y), FText::FromString(TEXT("Mouse Scroll: Zoom radar")), HUDFont, SettingsTextColor);
+	ScrollItem.Scale = FVector2D(TextScale, TextScale);
+	ScrollItem.bOutlined = true;
+	ScrollItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
+	Canvas->DrawItem(ScrollItem);
 }
 
 void AFighterHUD::DrawScoreInfo(AFighterPawn* Fighter)
@@ -189,28 +222,35 @@ void AFighterHUD::DrawScoreInfo(AFighterPawn* Fighter)
 	float Y = ScreenMargin;
 
 	// Build text lines
-	FString TankText = FString::Printf(TEXT("Tanks: %d"), Fighter->GetTanksDestroyed());
-	FString HeliText = FString::Printf(TEXT("Helis: %d"), Fighter->GetHelisDestroyed());
-	int32 TotalKills = Fighter->GetTanksDestroyed() + Fighter->GetHelisDestroyed();
-	FString TotalText = FString::Printf(TEXT("Total Kills: %d"), TotalKills);
-	FString AltText = FString::Printf(TEXT("Altitude: %.0f ft"), Fighter->GetCurrentAltitude());
-	FString SpeedText = FString::Printf(TEXT("Speed: %.0f"), Fighter->GetCurrentSpeed());
+	FString WaveText = FString::Printf(TEXT("Wave: %d"), Fighter->GetCurrentWave());
+	FString TankText = FString::Printf(TEXT("Tanks: %d/%d"), Fighter->GetTanksDestroyed(), Fighter->GetWaveTotalTanks());
+	FString HeliText = FString::Printf(TEXT("Helis: %d/%d"), Fighter->GetHelisDestroyed(), Fighter->GetWaveTotalHelis());
+	FString HPText = FString::Printf(TEXT("Base HP: %d/%d"), Fighter->GetBaseHP(), Fighter->GetBaseMaxHP());
 
 	// Draw semi-transparent background panel
 	float PanelWidth = 240.0f;
-	float PanelHeight = LineSpacing * 5.0f + 16.0f;
+	float PanelHeight = LineSpacing * 4.0f + 16.0f;
 	FLinearColor PanelColor(0.0f, 0.0f, 0.0f, 0.4f);
 	Canvas->K2_DrawBox(FVector2D(X - 4.0f, Y - 4.0f), FVector2D(PanelWidth, PanelHeight), 1.0f, PanelColor);
 
-	// Total Kills (highlighted)
-	FCanvasTextItem TotalItem(FVector2D(X, Y), FText::FromString(TotalText), HUDFont, ScoreTextColor);
-	TotalItem.Scale = FVector2D(TextScale, TextScale);
-	TotalItem.bOutlined = true;
-	TotalItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
-	Canvas->DrawItem(TotalItem);
+	// Base HP (highlighted, red if low)
+	FLinearColor HPColor = (Fighter->GetBaseHP() < Fighter->GetBaseMaxHP() / 4) ? FLinearColor(1.0f, 0.2f, 0.2f, 1.0f) : ScoreTextColor;
+	FCanvasTextItem HPItem(FVector2D(X, Y), FText::FromString(HPText), HUDFont, HPColor);
+	HPItem.Scale = FVector2D(TextScale, TextScale);
+	HPItem.bOutlined = true;
+	HPItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
+	Canvas->DrawItem(HPItem);
 	Y += LineSpacing;
 
-	// Tanks
+	// Wave
+	FCanvasTextItem WaveItem(FVector2D(X, Y), FText::FromString(WaveText), HUDFont, ScoreTextColor);
+	WaveItem.Scale = FVector2D(TextScale, TextScale);
+	WaveItem.bOutlined = true;
+	WaveItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
+	Canvas->DrawItem(WaveItem);
+	Y += LineSpacing;
+
+	// Tanks X/Y
 	FCanvasTextItem TankItem(FVector2D(X, Y), FText::FromString(TankText), HUDFont, ScoreTextColor);
 	TankItem.Scale = FVector2D(TextScale, TextScale);
 	TankItem.bOutlined = true;
@@ -218,7 +258,7 @@ void AFighterHUD::DrawScoreInfo(AFighterPawn* Fighter)
 	Canvas->DrawItem(TankItem);
 	Y += LineSpacing;
 
-	// Helis
+	// Helis X/Y
 	FCanvasTextItem HeliItem(FVector2D(X, Y), FText::FromString(HeliText), HUDFont, ScoreTextColor);
 	HeliItem.Scale = FVector2D(TextScale, TextScale);
 	HeliItem.bOutlined = true;
@@ -226,20 +266,52 @@ void AFighterHUD::DrawScoreInfo(AFighterPawn* Fighter)
 	Canvas->DrawItem(HeliItem);
 	Y += LineSpacing;
 
-	// Altitude
-	FCanvasTextItem AltItem(FVector2D(X, Y), FText::FromString(AltText), HUDFont, AltitudeTextColor);
-	AltItem.Scale = FVector2D(TextScale, TextScale);
-	AltItem.bOutlined = true;
-	AltItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
-	Canvas->DrawItem(AltItem);
-	Y += LineSpacing;
+}
 
-	// Speed
-	FCanvasTextItem SpeedItem(FVector2D(X, Y), FText::FromString(SpeedText), HUDFont, AltitudeTextColor);
-	SpeedItem.Scale = FVector2D(TextScale, TextScale);
+// ==================== Speed & Altitude (center screen) ====================
+
+void AFighterHUD::DrawSpeedAltitude(AFighterPawn* Fighter)
+{
+	if (!HUDFont || !Canvas || !Fighter) return;
+
+	float CX = Canvas->SizeX * 0.5f;
+	float CY = Canvas->SizeY * 0.5f;
+
+	FLinearColor SpeedColor(0.3f, 1.0f, 0.5f, 0.9f);
+	FLinearColor AltColor(0.4f, 0.8f, 1.0f, 0.9f);
+	FLinearColor LabelColor(0.7f, 0.7f, 0.7f, 0.7f);
+	float ValueScale = 1.6f;
+	float LabelScale = 0.85f;
+
+	// Speed on the left side of center
+	float SpeedX = CX - 200.0f;
+	FString SpeedVal = FString::Printf(TEXT("%.0f"), Fighter->GetCurrentSpeed());
+	FCanvasTextItem SpeedItem(FVector2D(SpeedX, CY - 12.0f), FText::FromString(SpeedVal), HUDFont, SpeedColor);
+	SpeedItem.Scale = FVector2D(ValueScale, ValueScale);
 	SpeedItem.bOutlined = true;
-	SpeedItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
+	SpeedItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.5f);
 	Canvas->DrawItem(SpeedItem);
+
+	FCanvasTextItem SpeedLabel(FVector2D(SpeedX, CY + 18.0f), FText::FromString(TEXT("SPD")), HUDFont, LabelColor);
+	SpeedLabel.Scale = FVector2D(LabelScale, LabelScale);
+	SpeedLabel.bOutlined = true;
+	SpeedLabel.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.4f);
+	Canvas->DrawItem(SpeedLabel);
+
+	// Altitude on the right side of center
+	float AltX = CX + 150.0f;
+	FString AltVal = FString::Printf(TEXT("%.0f"), Fighter->GetCurrentAltitude());
+	FCanvasTextItem AltItem(FVector2D(AltX, CY - 12.0f), FText::FromString(AltVal), HUDFont, AltColor);
+	AltItem.Scale = FVector2D(ValueScale, ValueScale);
+	AltItem.bOutlined = true;
+	AltItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.5f);
+	Canvas->DrawItem(AltItem);
+
+	FCanvasTextItem AltLabel(FVector2D(AltX, CY + 18.0f), FText::FromString(TEXT("ALT")), HUDFont, LabelColor);
+	AltLabel.Scale = FVector2D(LabelScale, LabelScale);
+	AltLabel.bOutlined = true;
+	AltLabel.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.4f);
+	Canvas->DrawItem(AltLabel);
 }
 
 // ==================== Radar ====================
@@ -524,5 +596,136 @@ void AFighterHUD::DrawJetHUD(AFighterPawn* Fighter)
 		AltTxt.bOutlined = true;
 		AltTxt.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.4f);
 		Canvas->DrawItem(AltTxt);
+	}
+}
+
+// ==================== Game Screen Overlays ====================
+
+void AFighterHUD::DrawCenteredText(const FString& Text, float Y, FLinearColor Color, float Scale)
+{
+	if (!HUDFont || !Canvas) return;
+
+	float CX = Canvas->SizeX * 0.5f;
+
+	// Approximate text width for centering
+	float CharW = 10.0f * Scale;
+	float TextW = Text.Len() * CharW;
+
+	FCanvasTextItem Item(FVector2D(CX - TextW * 0.5f, Y), FText::FromString(Text), HUDFont, Color);
+	Item.Scale = FVector2D(Scale, Scale);
+	Item.bOutlined = true;
+	Item.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
+	Canvas->DrawItem(Item);
+}
+
+void AFighterHUD::DrawLeftAlignedText(const FString& Text, float X, float Y, FLinearColor Color, float Scale)
+{
+	if (!HUDFont || !Canvas) return;
+
+	FCanvasTextItem Item(FVector2D(X, Y), FText::FromString(Text), HUDFont, Color);
+	Item.Scale = FVector2D(Scale, Scale);
+	Item.bOutlined = true;
+	Item.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
+	Canvas->DrawItem(Item);
+}
+
+void AFighterHUD::DrawDamageFlash(AFighterPawn* Fighter)
+{
+	if (!Canvas || !Fighter) return;
+
+	float Alpha = Fighter->GetDamageFlashAlpha();
+	if (Alpha <= 0.0f) return;
+
+	FLinearColor FlashColor(1.0f, 0.0f, 0.0f, Alpha);
+	FCanvasTileItem TileItem(FVector2D(0.0f, 0.0f), FVector2D(Canvas->SizeX, Canvas->SizeY), FlashColor);
+	TileItem.BlendMode = SE_BLEND_Translucent;
+	Canvas->DrawItem(TileItem);
+}
+
+void AFighterHUD::DrawGameScreen(AFighterPawn* Fighter)
+{
+	if (!Canvas || !Fighter || !HUDFont) return;
+
+	float CX = Canvas->SizeX * 0.5f;
+	float CY = Canvas->SizeY * 0.5f;
+	EGameState State = Fighter->GetGameState();
+
+	// Dark overlay
+	FLinearColor OverlayColor(0.0f, 0.0f, 0.0f, 0.7f);
+	Canvas->K2_DrawBox(FVector2D(0.0f, 0.0f), FVector2D(Canvas->SizeX, Canvas->SizeY), 1.0f, OverlayColor);
+
+	FLinearColor TitleColor(1.0f, 0.9f, 0.2f, 1.0f);
+	FLinearColor TextColor(0.9f, 0.9f, 0.9f, 0.9f);
+	FLinearColor PromptColor(0.3f, 1.0f, 0.4f, 1.0f);
+	FLinearColor RedColor(1.0f, 0.3f, 0.3f, 1.0f);
+
+	// Left margin for instructions text (offset from center)
+	float InstructionsX = CX - 250.0f;
+
+	if (State == EGameState::Instructions)
+	{
+		DrawCenteredText(TEXT("ZEBOMBER"), CY - 220.0f, TitleColor, 2.5f);
+
+		// Split instructions text into lines and draw left-aligned
+		TArray<FString> Lines;
+		Fighter->GetInstructionsText().ParseIntoArrayLines(Lines);
+		float LineY = CY - 150.0f;
+		for (const FString& Line : Lines)
+		{
+			DrawLeftAlignedText(Line, InstructionsX, LineY, TextColor, 0.9f);
+			LineY += 20.0f;
+		}
+
+		DrawCenteredText(StartMessage, CY + 180.0f, PromptColor, 1.3f);
+	}
+	else if (State == EGameState::Paused)
+	{
+		DrawCenteredText(PauseTitle, CY - 220.0f, TitleColor, 2.5f);
+
+		// Show instructions left-aligned
+		TArray<FString> Lines;
+		Fighter->GetInstructionsText().ParseIntoArrayLines(Lines);
+		float LineY = CY - 150.0f;
+		for (const FString& Line : Lines)
+		{
+			DrawLeftAlignedText(Line, InstructionsX, LineY, TextColor, 0.85f);
+			LineY += 18.0f;
+		}
+
+		// Place resume/quit below instructions with some spacing
+		float PromptY = LineY + 20.0f;
+		DrawCenteredText(PauseResumeMessage, PromptY, PromptColor, 1.1f);
+		DrawCenteredText(PauseQuitMessage, PromptY + 30.0f, RedColor, 1.1f);
+	}
+	else if (State == EGameState::GameOver)
+	{
+		DrawCenteredText(GameOverTitle, CY - 80.0f, RedColor, 3.0f);
+		DrawCenteredText(GameOverSubtitle, CY - 20.0f, TextColor, 1.2f);
+
+		// Stats
+		FString StatsText = FString::Printf(TEXT("Waves survived: %d  |  Tanks: %d  |  Helis: %d"),
+			Fighter->GetCurrentWave() > 0 ? Fighter->GetCurrentWave() - 1 : 0,
+			Fighter->GetTanksDestroyed(), Fighter->GetHelisDestroyed());
+		DrawCenteredText(StatsText, CY + 30.0f, TextColor, 0.9f);
+
+		DrawCenteredText(GameOverRestartMessage, CY + 100.0f, PromptColor, 1.3f);
+	}
+	else if (State == EGameState::WaveEnd)
+	{
+		FString Title = FString::Printf(TEXT("WAVE %d COMPLETE!"), Fighter->GetCurrentWave());
+		DrawCenteredText(Title, CY - 100.0f, TitleColor, 2.0f);
+
+		FString TimeText = FString::Printf(TEXT("Time: %.1f seconds"), Fighter->GetWaveDuration());
+		DrawCenteredText(TimeText, CY - 40.0f, TextColor, 1.1f);
+
+		FString TankStats = FString::Printf(TEXT("Tanks destroyed: %d/%d"), Fighter->GetTanksDestroyed(), Fighter->GetWaveTotalTanks());
+		FString HeliStats = FString::Printf(TEXT("Helis destroyed: %d/%d"), Fighter->GetHelisDestroyed(), Fighter->GetWaveTotalHelis());
+		DrawCenteredText(TankStats, CY + 0.0f, TextColor, 1.0f);
+		DrawCenteredText(HeliStats, CY + 28.0f, TextColor, 1.0f);
+
+		FString HPText = FString::Printf(TEXT("Base HP: %d/%d"), Fighter->GetBaseHP(), Fighter->GetBaseMaxHP());
+		DrawCenteredText(HPText, CY + 60.0f, PromptColor, 1.0f);
+
+		DrawCenteredText(WaveNextMessage, CY + 120.0f, PromptColor, 1.3f);
 	}
 }

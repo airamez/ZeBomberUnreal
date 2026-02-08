@@ -14,6 +14,18 @@ class ZEBOMBER_API ATankWaveSpawner : public AActor
 public:
 	ATankWaveSpawner();
 
+	/** Manually trigger the next wave (called by FighterPawn) */
+	void TriggerNextWave();
+
+	/** Returns number of active tanks */
+	int32 GetActiveTankCount() const { return ActiveTankCount; }
+
+	/** Returns current wave number */
+	int32 GetCurrentWave() const { return CurrentWave; }
+
+	/** Returns how many tanks will spawn in the next wave */
+	int32 GetNextWaveTankCount() const { return TanksPerWave + CurrentWave * TanksAddedPerWave; }
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -66,6 +78,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tank Spawning", meta = (ClampMin = "0.0"))
 	float LineOfFireDistance = 500.0f;
 
+	/** Rate of fire - seconds between shots at the base */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tank Spawning", meta = (ClampMin = "0.1"))
+	float RateOfFire = 3.0f;
+
 	/** Enable zigzag movement pattern (sailboat style) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tank Spawning")
 	bool bUseZigzagMovement = false;
@@ -107,6 +123,9 @@ private:
 	/** Start the next wave timer */
 	void ScheduleNextWave();
 
-	/** Check if all tanks from current wave are destroyed and start next wave */
+	/** Check if all tanks from current wave are destroyed */
 	void CheckWaveComplete();
+
+	/** Whether spawner is waiting for external command to spawn */
+	bool bWaitingForCommand = true;
 };

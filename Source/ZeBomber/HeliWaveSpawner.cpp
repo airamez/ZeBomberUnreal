@@ -17,10 +17,14 @@ void AHeliWaveSpawner::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UE_LOG(LogTemp, Log, TEXT("HeliWaveSpawner: Base target is world origin (0,0,0)"));
+	UE_LOG(LogTemp, Log, TEXT("HeliWaveSpawner: Base target is world origin (0,0,0). Waiting for command to spawn."));
+}
 
-	// Start first wave
-	ScheduleNextWave();
+void AHeliWaveSpawner::TriggerNextWave()
+{
+	CurrentWave++;
+	UE_LOG(LogTemp, Log, TEXT("HeliWaveSpawner: TriggerNextWave -> Wave %d"), CurrentWave);
+	SpawnWave();
 }
 
 void AHeliWaveSpawner::Tick(float DeltaTime)
@@ -85,6 +89,7 @@ void AHeliWaveSpawner::SpawnWave()
 				HeliAI->SetStoppingDistance(LineOfFireDistance);
 				HeliAI->SetMeshRotation(MeshRotationOffset);
 				HeliAI->SetFlyHeight(SpawnLocation.Z); // Use the spawned height
+				HeliAI->SetRateOfFire(RateOfFire);
 				HeliAI->SetTargetLocation(TargetLocation);
 			}
 
@@ -160,10 +165,8 @@ void AHeliWaveSpawner::OnHeliDestroyed(AActor* DestroyedActor)
 
 void AHeliWaveSpawner::CheckWaveComplete()
 {
-	// If all helicopters from the wave are destroyed, start next wave
 	if (ActiveHeliCount <= 0)
 	{
-		UE_LOG(LogTemp, Log, TEXT("HeliWaveSpawner: Wave %d complete!"), CurrentWave);
-		ScheduleNextWave();
+		UE_LOG(LogTemp, Log, TEXT("HeliWaveSpawner: Wave %d complete! Waiting for next command."), CurrentWave);
 	}
 }

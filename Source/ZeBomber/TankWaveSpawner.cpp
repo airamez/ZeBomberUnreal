@@ -17,10 +17,14 @@ void ATankWaveSpawner::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	UE_LOG(LogTemp, Log, TEXT("TankWaveSpawner: Base target is world origin (0,0,0)"));
-	
-	// Start first wave
-	ScheduleNextWave();
+	UE_LOG(LogTemp, Log, TEXT("TankWaveSpawner: Base target is world origin (0,0,0). Waiting for command to spawn."));
+}
+
+void ATankWaveSpawner::TriggerNextWave()
+{
+	CurrentWave++;
+	UE_LOG(LogTemp, Log, TEXT("TankWaveSpawner: TriggerNextWave -> Wave %d"), CurrentWave);
+	SpawnWave();
 }
 
 void ATankWaveSpawner::Tick(float DeltaTime)
@@ -85,6 +89,7 @@ void ATankWaveSpawner::SpawnWave()
 				TankAI->SetStoppingDistance(LineOfFireDistance);
 				TankAI->SetMeshRotation(MeshRotationOffset);
 				TankAI->SetZigzagSettings(bUseZigzagMovement, ZigzagMinDistance, ZigzagMaxDistance);
+				TankAI->SetRateOfFire(RateOfFire);
 				TankAI->SetTargetLocation(TargetLocation);
 			}
 			
@@ -157,10 +162,8 @@ void ATankWaveSpawner::OnTankDestroyed(AActor* DestroyedActor)
 
 void ATankWaveSpawner::CheckWaveComplete()
 {
-	// If all tanks from the wave are destroyed, start next wave
 	if (ActiveTankCount <= 0)
 	{
-		UE_LOG(LogTemp, Log, TEXT("TankWaveSpawner: Wave %d complete!"), CurrentWave);
-		ScheduleNextWave();
+		UE_LOG(LogTemp, Log, TEXT("TankWaveSpawner: Wave %d complete! Waiting for next command."), CurrentWave);
 	}
 }

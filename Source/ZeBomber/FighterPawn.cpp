@@ -4,6 +4,8 @@
 #include "RocketProjectile.h"
 #include "TankAI.h"
 #include "HeliAI.h"
+#include "TankWaveSpawner.h"
+#include "HeliWaveSpawner.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SceneComponent.h"
 #include "EnhancedInputComponent.h"
@@ -15,6 +17,7 @@
 #include "GameFramework/PlayerInput.h"
 #include "Framework/Application/SlateApplication.h"
 #include "EngineUtils.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 AFighterPawn::AFighterPawn()
 {
@@ -43,6 +46,16 @@ AFighterPawn::AFighterPawn()
 	// Create ToggleJetHUDAction in constructor (/ key)
 	ToggleJetHUDAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_ToggleJetHUD_Auto"));
 	ToggleJetHUDAction->ValueType = EInputActionValueType::Boolean;
+
+	// Create game state input actions
+	PauseAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_Pause_Auto"));
+	PauseAction->ValueType = EInputActionValueType::Boolean;
+
+	ContinueAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_Continue_Auto"));
+	ContinueAction->ValueType = EInputActionValueType::Boolean;
+
+	QuitAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_Quit_Auto"));
+	QuitAction->ValueType = EInputActionValueType::Boolean;
 }
 
 void AFighterPawn::BeginPlay()
@@ -84,6 +97,9 @@ void AFighterPawn::BeginPlay()
 	UInputMappingContext* FreeLookMappingContext = NewObject<UInputMappingContext>(this, TEXT("IMC_FreeLook_Auto"));
 	FreeLookMappingContext->MapKey(FreeLookAction, EKeys::RightMouseButton);
 	FreeLookMappingContext->MapKey(ToggleJetHUDAction, EKeys::Slash);
+	FreeLookMappingContext->MapKey(PauseAction, EKeys::Escape);
+	FreeLookMappingContext->MapKey(ContinueAction, EKeys::C);
+	FreeLookMappingContext->MapKey(QuitAction, EKeys::X);
 	UE_LOG(LogTemp, Warning, TEXT("FighterPawn: Created FreeLook mapping context with RMB"));
 
 	// Add input mapping contexts
@@ -121,6 +137,9 @@ void AFighterPawn::BeginPlay()
 
 	// Bind to existing enemy destruction events for score tracking
 	BindEnemyDestroyedEvents();
+
+	// Start in Instructions state
+	CurrentGameState = EGameState::Instructions;
 
 	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Initialized at altitude %.0f, speed %.0f"), StartAltitude, CurrentSpeed);
 }
@@ -169,6 +188,15 @@ void AFighterPawn::Tick(float DeltaTime)
 		}
 	}
 
+	// Decay damage flash
+	if (DamageFlashAlpha > 0.0f)
+	{
+		DamageFlashAlpha = FMath::Max(0.0f, DamageFlashAlpha - DamageFlashDecayRate * DeltaTime);
+	}
+
+	// Only run gameplay when Playing
+	if (CurrentGameState != EGameState::Playing) return;
+
 	UpdateFlight(DeltaTime);
 	UpdateVirtualCursor(DeltaTime);
 	UpdateFreeLook(DeltaTime);
@@ -188,6 +216,9 @@ void AFighterPawn::Tick(float DeltaTime)
 	{
 		FireRocket();
 	}
+
+	// Check if all enemies in wave are cleared
+	// (also checked in AddTankKill/AddHeliKill but this catches edge cases)
 }
 
 void AFighterPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -248,6 +279,24 @@ void AFighterPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		if (ToggleJetHUDAction)
 		{
 			EIC->BindAction(ToggleJetHUDAction, ETriggerEvent::Started, this, &AFighterPawn::OnToggleJetHUD);
+		}
+
+		// ESC = Pause
+		if (PauseAction)
+		{
+			EIC->BindAction(PauseAction, ETriggerEvent::Started, this, &AFighterPawn::OnPausePressed);
+		}
+
+		// C = Continue / Start / Next Wave / Restart
+		if (ContinueAction)
+		{
+			EIC->BindAction(ContinueAction, ETriggerEvent::Started, this, &AFighterPawn::OnContinuePressed);
+		}
+
+		// X = Quit
+		if (QuitAction)
+		{
+			EIC->BindAction(QuitAction, ETriggerEvent::Started, this, &AFighterPawn::OnQuitGame);
 		}
 
 		// Volume controls (+ / -)
@@ -317,6 +366,7 @@ void AFighterPawn::OnTurnRightReleased(const FInputActionValue& Value)
 void AFighterPawn::OnDropBomb(const FInputActionValue& Value)
 {
 	if (!bWarmupComplete) return;
+	if (CurrentGameState != EGameState::Playing) return;
 	DropBomb();
 }
 
@@ -369,6 +419,107 @@ void AFighterPawn::OnToggleJetHUD(const FInputActionValue& Value)
 {
 	bJetHUDEnabled = !bJetHUDEnabled;
 	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Jet HUD %s"), bJetHUDEnabled ? TEXT("ON") : TEXT("OFF"));
+}
+
+void AFighterPawn::OnPausePressed(const FInputActionValue& Value)
+{
+	if (CurrentGameState == EGameState::Playing)
+	{
+		CurrentGameState = EGameState::Paused;
+		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Game PAUSED"));
+	}
+}
+
+void AFighterPawn::OnContinuePressed(const FInputActionValue& Value)
+{
+	if (CurrentGameState == EGameState::Instructions || CurrentGameState == EGameState::WaveEnd)
+	{
+		StartNextWave();
+	}
+	else if (CurrentGameState == EGameState::Paused)
+	{
+		CurrentGameState = EGameState::Playing;
+		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Game RESUMED"));
+	}
+	else if (CurrentGameState == EGameState::GameOver)
+	{
+		UGameplayStatics::OpenLevel(GetWorld(), FName(*GetWorld()->GetName()));
+	}
+}
+
+void AFighterPawn::OnQuitGame(const FInputActionValue& Value)
+{
+	if (CurrentGameState == EGameState::Paused)
+	{
+		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Quitting game"));
+		UKismetSystemLibrary::QuitGame(GetWorld(), Cast<APlayerController>(Controller), EQuitPreference::Quit, false);
+	}
+}
+
+void AFighterPawn::DamageBase(int32 Damage)
+{
+	if (CurrentGameState != EGameState::Playing) return;
+
+	BaseHP = FMath::Max(0, BaseHP - Damage);
+	DamageFlashAlpha = 0.6f;
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Base hit! HP: %d/%d"), BaseHP, BaseMaxHP);
+
+	if (BaseHP <= 0)
+	{
+		CurrentGameState = EGameState::GameOver;
+		UE_LOG(LogTemp, Warning, TEXT("FighterPawn: GAME OVER - Base destroyed!"));
+	}
+}
+
+void AFighterPawn::RegisterWaveEnemies(int32 Tanks, int32 Helis)
+{
+	WaveTotalTanks += Tanks;
+	WaveTotalHelis += Helis;
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Wave enemies registered - Tanks: %d, Helis: %d"), WaveTotalTanks, WaveTotalHelis);
+}
+
+void AFighterPawn::CheckWaveCleared()
+{
+	if (CurrentGameState != EGameState::Playing) return;
+
+	int32 TotalKilled = WaveTanksDestroyed + WaveHelisDestroyed;
+	int32 TotalEnemies = WaveTotalTanks + WaveTotalHelis;
+
+	if (TotalEnemies > 0 && TotalKilled >= TotalEnemies)
+	{
+		WaveDuration = GetWorld()->GetTimeSeconds() - WaveStartTime;
+		CurrentGameState = EGameState::WaveEnd;
+		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Wave %d cleared in %.1f seconds!"), CurrentWave, WaveDuration);
+	}
+}
+
+void AFighterPawn::StartNextWave()
+{
+	CurrentWave++;
+	WaveTanksDestroyed = 0;
+	WaveHelisDestroyed = 0;
+	WaveTotalTanks = 0;
+	WaveTotalHelis = 0;
+	WaveStartTime = GetWorld()->GetTimeSeconds();
+
+	CurrentGameState = EGameState::Playing;
+
+	// Find spawners and trigger them
+	for (TActorIterator<ATankWaveSpawner> It(GetWorld()); It; ++It)
+	{
+		int32 TankCount = It->GetNextWaveTankCount();
+		It->TriggerNextWave();
+		RegisterWaveEnemies(TankCount, 0);
+	}
+
+	for (TActorIterator<AHeliWaveSpawner> It(GetWorld()); It; ++It)
+	{
+		int32 HeliCount = It->GetNextWaveHeliCount();
+		It->TriggerNextWave();
+		RegisterWaveEnemies(0, HeliCount);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Wave %d started! Tanks: %d, Helis: %d"), CurrentWave, WaveTotalTanks, WaveTotalHelis);
 }
 
 // ==================== Flight Logic ====================
@@ -491,25 +642,27 @@ void AFighterPawn::UpdateMouseAim()
 	APlayerController* PC = Cast<APlayerController>(Controller);
 	if (!PC) return;
 
-	// Use virtual cursor position for deprojection (zero-lag)
+	// Always deproject VirtualCursorPos through the current camera.
+	// During free-look the cursor is frozen on screen but the camera rotates,
+	// so the same screen position aims in a new world direction — this lets
+	// the player aim the rocket turret by looking around.
 	FVector WorldLocation, WorldDirection;
-	if (PC->DeprojectScreenPositionToWorld(VirtualCursorPos.X, VirtualCursorPos.Y, WorldLocation, WorldDirection))
+	PC->DeprojectScreenPositionToWorld(VirtualCursorPos.X, VirtualCursorPos.Y, WorldLocation, WorldDirection);
+
+	FVector TraceStart = WorldLocation;
+	FVector TraceEnd = WorldLocation + (WorldDirection * CrosshairMaxDistance);
+
+	FHitResult HitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams))
 	{
-		FVector TraceStart = WorldLocation;
-		FVector TraceEnd = WorldLocation + (WorldDirection * CrosshairMaxDistance);
-
-		FHitResult HitResult;
-		FCollisionQueryParams QueryParams;
-		QueryParams.AddIgnoredActor(this);
-
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams))
-		{
-			RocketAimWorldTarget = HitResult.ImpactPoint;
-		}
-		else
-		{
-			RocketAimWorldTarget = TraceEnd;
-		}
+		RocketAimWorldTarget = HitResult.ImpactPoint;
+	}
+	else
+	{
+		RocketAimWorldTarget = TraceEnd;
 	}
 }
 
@@ -658,10 +811,6 @@ void AFighterPawn::FireRocket()
 		Direction = GetActorForwardVector();
 	}
 
-	// Don't fire backwards
-	float DotForward = FVector::DotProduct(Direction, GetActorForwardVector());
-	if (DotForward < 0.0f) return;
-
 	FRotator SpawnRotation = Direction.Rotation();
 
 	FActorSpawnParameters SpawnParams;
@@ -716,12 +865,12 @@ void AFighterPawn::OnEnemyDestroyed(AActor* DestroyedActor)
 
 	if (DestroyedActor->IsA<ATankAI>())
 	{
-		TanksDestroyed++;
-		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Tank destroyed! Total: %d"), TanksDestroyed);
+		AddTankKill();
+		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Tank destroyed! Wave: %d/%d"), WaveTanksDestroyed, WaveTotalTanks);
 	}
 	else if (DestroyedActor->IsA<AHeliAI>())
 	{
-		HelisDestroyed++;
-		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Heli destroyed! Total: %d"), HelisDestroyed);
+		AddHeliKill();
+		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Heli destroyed! Wave: %d/%d"), WaveHelisDestroyed, WaveTotalHelis);
 	}
 }

@@ -13,6 +13,17 @@ class UInputMappingContext;
 class UInputAction;
 class USoundBase;
 
+/** Game state for managing screens and flow */
+UENUM(BlueprintType)
+enum class EGameState : uint8
+{
+	Instructions,
+	Playing,
+	Paused,
+	WaveEnd,
+	GameOver
+};
+
 /**
  * First-person fighter pawn. The camera sits at the nose of an invisible airplane.
  * WASD controls flight (A/D = yaw, W = tip down, S = tip up).
@@ -51,20 +62,63 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Fighter")
 	float GetCurrentAltitude() const { return GetActorLocation().Z; }
 
-	/** Returns number of tanks destroyed */
+	/** Returns number of tanks destroyed in current wave */
 	UFUNCTION(BlueprintCallable, Category = "Score")
-	int32 GetTanksDestroyed() const { return TanksDestroyed; }
+	int32 GetTanksDestroyed() const { return WaveTanksDestroyed; }
 
-	/** Returns number of helicopters destroyed */
+	/** Returns number of helicopters destroyed in current wave */
 	UFUNCTION(BlueprintCallable, Category = "Score")
-	int32 GetHelisDestroyed() const { return HelisDestroyed; }
+	int32 GetHelisDestroyed() const { return WaveHelisDestroyed; }
+
+	/** Returns total tanks in current wave */
+	UFUNCTION(BlueprintCallable, Category = "Score")
+	int32 GetWaveTotalTanks() const { return WaveTotalTanks; }
+
+	/** Returns total helis in current wave */
+	UFUNCTION(BlueprintCallable, Category = "Score")
+	int32 GetWaveTotalHelis() const { return WaveTotalHelis; }
 
 	/** Called by projectiles when they destroy an enemy */
 	UFUNCTION(BlueprintCallable, Category = "Score")
-	void AddTankKill() { TanksDestroyed++; }
+	void AddTankKill() { WaveTanksDestroyed++; TotalTanksDestroyed++; CheckWaveCleared(); }
 
 	UFUNCTION(BlueprintCallable, Category = "Score")
-	void AddHeliKill() { HelisDestroyed++; }
+	void AddHeliKill() { WaveHelisDestroyed++; TotalHelisDestroyed++; CheckWaveCleared(); }
+
+	/** Returns current base HP */
+	UFUNCTION(BlueprintCallable, Category = "Game")
+	int32 GetBaseHP() const { return BaseHP; }
+
+	/** Returns max base HP */
+	UFUNCTION(BlueprintCallable, Category = "Game")
+	int32 GetBaseMaxHP() const { return BaseMaxHP; }
+
+	/** Returns current game state */
+	UFUNCTION(BlueprintCallable, Category = "Game")
+	EGameState GetGameState() const { return CurrentGameState; }
+
+	/** Returns current wave number */
+	UFUNCTION(BlueprintCallable, Category = "Game")
+	int32 GetCurrentWave() const { return CurrentWave; }
+
+	/** Returns red flash alpha (0-1, for screen damage flash) */
+	UFUNCTION(BlueprintCallable, Category = "Game")
+	float GetDamageFlashAlpha() const { return DamageFlashAlpha; }
+
+	/** Returns the instructions text loaded from file */
+	UFUNCTION(BlueprintCallable, Category = "Game")
+	const FString& GetInstructionsText() const { return InstructionsText; }
+
+	/** Returns wave duration in seconds */
+	UFUNCTION(BlueprintCallable, Category = "Game")
+	float GetWaveDuration() const { return WaveDuration; }
+
+	/** Called by enemies when they shoot the base */
+	UFUNCTION(BlueprintCallable, Category = "Game")
+	void DamageBase(int32 Damage = 1);
+
+	/** Called by spawners to register wave enemy counts */
+	void RegisterWaveEnemies(int32 Tanks, int32 Helis);
 
 	/** Returns current sound volume (0.0 - 1.0) */
 	UFUNCTION(BlueprintCallable, Category = "Settings")
@@ -277,6 +331,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* ToggleJetHUDAction;
 
+	UInputAction* PauseAction;
+	UInputAction* ContinueAction;
+	UInputAction* QuitAction;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* VolumeUpAction;
 
@@ -328,9 +386,55 @@ private:
 	/** Whether the bomb impact prediction is valid (hits ground) */
 	bool bBombImpactValid = false;
 
-	/** Score tracking */
-	int32 TanksDestroyed = 0;
-	int32 HelisDestroyed = 0;
+	/** Score tracking (per wave) */
+	int32 WaveTanksDestroyed = 0;
+	int32 WaveHelisDestroyed = 0;
+	int32 WaveTotalTanks = 0;
+	int32 WaveTotalHelis = 0;
+
+	/** Score tracking (total) */
+	int32 TotalTanksDestroyed = 0;
+	int32 TotalHelisDestroyed = 0;
+
+	/** Game state */
+	EGameState CurrentGameState = EGameState::Instructions;
+	int32 CurrentWave = 0;
+
+	/** Base HP */
+	int32 BaseHP = 100;
+	int32 BaseMaxHP = 100;
+
+	/** Damage flash */
+	float DamageFlashAlpha = 0.0f;
+	float DamageFlashDecayRate = 3.0f;
+
+	/** Wave timing */
+	float WaveStartTime = 0.0f;
+	float WaveDuration = 0.0f;
+
+	/** Instructions text (editable in Blueprint or C++) */
+	UPROPERTY(EditAnywhere, Category = "Game")
+	FString InstructionsText =
+		TEXT("========================================\n")
+		TEXT("         ZEBOMBER - MISSION BRIEFING\n")
+		TEXT("========================================\n")
+		TEXT("\n")
+		TEXT("Defend the base from waves of attacking enemies!\n")
+		TEXT("\n")
+		TEXT("CONTROLS:\n")
+		TEXT("  W / S / A / D  -  Control the airplane\n")
+		TEXT("  Left Mouse     -  Fire rockets\n")
+		TEXT("  Space          -  Drop bombs\n")
+		TEXT("  Right Mouse    -  Look around (free-look)\n")
+		TEXT("  Mouse Scroll   -  Zoom radar in/out\n")
+		TEXT("  /              -  Toggle jet HUD on/off\n")
+		TEXT("  ESC            -  Pause game\n")
+		TEXT("\n")
+		TEXT("TIPS:\n")
+		TEXT("  - Only bombs destroy tanks!\n")
+		TEXT("  - Rockets can destroy helicopters\n")
+		TEXT("  - If the base HP reaches zero, you lose the game!\n")
+		TEXT("  - Destroy all enemies in a wave to advance");
 
 	/** Sound volume (0.0 - 1.0) */
 	float SoundVolume = 0.5f;
@@ -389,6 +493,9 @@ private:
 	void OnSensitivityUp(const FInputActionValue& Value);
 	void OnSensitivityDown(const FInputActionValue& Value);
 	void OnToggleJetHUD(const FInputActionValue& Value);
+	void OnPausePressed(const FInputActionValue& Value);
+	void OnContinuePressed(const FInputActionValue& Value);
+	void OnQuitGame(const FInputActionValue& Value);
 
 	// ==================== Core Logic ====================
 
@@ -400,6 +507,8 @@ private:
 	void DropBomb();
 	void FireRocket();
 	void BindEnemyDestroyedEvents();
+	void CheckWaveCleared();
+	void StartNextWave();
 
 	UFUNCTION()
 	void OnEnemyDestroyed(AActor* DestroyedActor);

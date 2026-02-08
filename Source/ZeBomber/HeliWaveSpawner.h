@@ -15,6 +15,18 @@ class ZEBOMBER_API AHeliWaveSpawner : public AActor
 public:
 	AHeliWaveSpawner();
 
+	/** Manually trigger the next wave (called by FighterPawn) */
+	void TriggerNextWave();
+
+	/** Returns number of active helis */
+	int32 GetActiveHeliCount() const { return ActiveHeliCount; }
+
+	/** Returns current wave number */
+	int32 GetCurrentWave() const { return CurrentWave; }
+
+	/** Returns how many helis will spawn in the next wave */
+	int32 GetNextWaveHeliCount() const { return HelisPerWave + CurrentWave * HelisAddedPerWave; }
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -71,6 +83,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Helicopter Spawning", meta = (ClampMin = "0.0"))
 	float LineOfFireDistance = 500.0f;
 
+	/** Rate of fire - seconds between shots at the base */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Helicopter Spawning", meta = (ClampMin = "0.1"))
+	float RateOfFire = 3.0f;
+
 private:
 	/** Current wave number */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Helicopter Spawning", meta = (AllowPrivateAccess = "true"))
@@ -100,6 +116,9 @@ private:
 	/** Start the next wave timer */
 	void ScheduleNextWave();
 
-	/** Check if all helicopters from current wave are destroyed and start next wave */
+	/** Check if all helicopters from current wave are destroyed */
 	void CheckWaveComplete();
+
+	/** Whether spawner is waiting for external command to spawn */
+	bool bWaitingForCommand = true;
 };

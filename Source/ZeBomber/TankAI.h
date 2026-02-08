@@ -85,6 +85,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Tank Movement")
 	void SetZigzagSettings(bool bEnableZigzag, float MinDistance, float MaxDistance);
 
+	/** Set the rate of fire (seconds between shots) */
+	void SetRateOfFire(float Rate);
+
 	/** Get current move speed */
 	UFUNCTION(BlueprintPure, Category = "Tank Movement")
 	float GetMoveSpeed() const { return MoveSpeed; }
@@ -118,6 +121,15 @@ private:
 	/** Has a target been explicitly set? */
 	bool bTargetSet = false;
 
+	/** Whether this tank has reached the line of fire and is shooting */
+	bool bIsFiring = false;
+
+	/** Seconds between shots at the base */
+	float RateOfFire = 3.0f;
+
+	/** Timer counting down to next shot */
+	float FireTimer = 0.0f;
+
 	/** Move the tank toward target */
 	void MoveTowardTarget(float DeltaTime);
 
@@ -141,4 +153,7 @@ private:
 
 	/** Rotate toward the current zigzag movement angle */
 	void RotateTowardZigzagAngle(float DeltaTime);
+
+	/** Fire at the base (damage it) */
+	void FireAtBase();
 };

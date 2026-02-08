@@ -77,6 +77,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Helicopter Movement")
 	void SetFlyHeight(float NewHeight);
 
+	/** Set the rate of fire (seconds between shots) */
+	void SetRateOfFire(float Rate);
+
 	/** Get current move speed */
 	UFUNCTION(BlueprintPure, Category = "Helicopter Movement")
 	float GetMoveSpeed() const { return MoveSpeed; }
@@ -92,9 +95,21 @@ private:
 	/** Has a target been explicitly set? */
 	bool bTargetSet = false;
 
+	/** Whether this heli has reached the line of fire and is shooting */
+	bool bIsFiring = false;
+
+	/** Seconds between shots at the base */
+	float RateOfFire = 3.0f;
+
+	/** Timer counting down to next shot */
+	float FireTimer = 0.0f;
+
 	/** Move the helicopter toward target */
 	void MoveTowardTarget(float DeltaTime);
 
 	/** Smoothly rotate toward target */
 	void RotateTowardTarget(float DeltaTime);
+
+	/** Fire at the base (damage it) */
+	void FireAtBase();
 };

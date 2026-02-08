@@ -1,8 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "TankAI.h"
+#include "FighterPawn.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SceneComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 ATankAI::ATankAI()
 {
@@ -55,6 +57,23 @@ void ATankAI::Tick(float DeltaTime)
 	}
 
 	MoveTowardTarget(DeltaTime);
+
+	// Fire at base when stopped at line of fire
+	if (HasReachedTarget() && !bIsFiring)
+	{
+		bIsFiring = true;
+		FireTimer = RateOfFire;
+	}
+
+	if (bIsFiring)
+	{
+		FireTimer -= DeltaTime;
+		if (FireTimer <= 0.0f)
+		{
+			FireAtBase();
+			FireTimer = RateOfFire;
+		}
+	}
 }
 
 void ATankAI::SetTargetLocation(const FVector& NewTarget)
@@ -110,6 +129,11 @@ void ATankAI::SetZigzagSettings(bool bEnableZigzag, float MinDistance, float Max
 	{
 		InitializeZigzagMovement();
 	}
+}
+
+void ATankAI::SetRateOfFire(float Rate)
+{
+	RateOfFire = FMath::Max(0.1f, Rate);
 }
 
 bool ATankAI::HasReachedTarget() const
@@ -313,6 +337,15 @@ bool ATankAI::HasCrossedCenterLine() const
 	float DistCenterFromSpawn = (CenterPoint - InitialSpawnLocation).Size();
 	
 	return DistCurrentFromSpawn > DistCenterFromSpawn + 50.0f; // Small threshold to ensure we've actually crossed
+}
+
+void ATankAI::FireAtBase()
+{
+	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (AFighterPawn* Fighter = Cast<AFighterPawn>(PlayerPawn))
+	{
+		Fighter->DamageBase(1);
+	}
 }
 
 void ATankAI::RotateTowardZigzagAngle(float DeltaTime)

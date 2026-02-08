@@ -1,0 +1,23 @@
+========================================
+         ZEBOMBER - MISSION BRIEFING
+========================================
+
+Defend the base from waves of attacking enemies!
+
+CONTROLS:
+  W / S / A / D  -  Control the airplane
+  Left Mouse     -  Fire rockets
+  Space          -  Drop bombs
+  Right Mouse    -  Hold to look around (free-look)
+  Mouse Scroll   -  Zoom radar in/out
+  /              -  Toggle jet HUD on/off
+  ESC            -  Pause game
+
+TIPS:
+  - Only bombs destroy tanks!
+  - Rockets can destroy helicopters
+  - Check bottom-right of screen for volume, sensitivity, and HUD controls
+  - If the base HP reaches zero, you lose the game!
+  - Destroy all enemies in a wave to advance to the next one
+
+Press SPACE to start the game.

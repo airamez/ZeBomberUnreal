@@ -1,6 +1,6 @@
 # ZeBomber
 
-An Unreal Engine 5.7 aerial combat game featuring first-person fighter gameplay with bombs and rockets.
+An Unreal Engine 5.7 aerial combat game. Defend your base from waves of tanks and helicopters using bombs and rockets from a first-person fighter cockpit.
 
 ---
 
@@ -22,6 +22,35 @@ The **FighterPawn** is a first-person cockpit-view pawn. The camera sits at the 
 | **Space** | Drop bomb |
 | **Mouse Scroll Up/Down** | Zoom radar in/out |
 | **/** | Toggle jet HUD on/off |
+| **ESC** | Pause game (show instructions + quit option) |
+| **X** | Quit game (only when paused) |
+
+### Game Flow
+
+1. **Instructions screen** — Game starts showing instructions loaded from `Content/instructions.txt`. Press **Space** to begin.
+2. **Wave gameplay** — Enemies spawn and advance toward the base at (0,0,0). Destroy all enemies to complete the wave.
+3. **Wave end screen** — Shows wave duration, kill stats, and base HP. Press **Space** for the next wave.
+4. **Pause** — Press **ESC** to pause. Shows instructions + "Press X to close the game". Press **ESC** again to resume.
+5. **Game Over** — If base HP reaches 0, the game over screen appears. Press **Space** to restart.
+
+### Base Defense
+
+- Enemies stop at their line of fire and shoot the base at variable intervals.
+- Each hit reduces **Base HP** by 1 and flashes the screen red.
+- Base HP is shown in the top-left score panel. Turns red when below 25%.
+- If Base HP reaches 0, you lose.
+- Only **bombs** destroy tanks. **Rockets** destroy helicopters.
+
+### Wave System
+
+- Waves are managed by `TankWaveSpawner` and `HeliWaveSpawner` actors in the level.
+- Spawners wait for the FighterPawn to trigger each wave (no auto-spawning).
+- Each wave adds more enemies (configurable per-spawner).
+- Kill counters show **X/Y** format (destroyed/total in current wave).
+
+### Instructions File
+
+Edit `Content/instructions.txt` to change the text shown on the start screen and pause screen. The file is loaded at runtime.
 
 ### Crosshairs
 

@@ -123,6 +123,52 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|JetHUD", meta = (ClampMin = "10"))
 	int32 PitchLadderRange = 20;
 
+	// ==================== Game Screens (Configurable Messages) ====================
+
+	/** Message shown on the instructions/start screen */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Messages")
+	FString StartMessage = TEXT("Press C to continue");
+
+	/** Message shown when paused */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Messages")
+	FString PauseTitle = TEXT("PAUSED");
+
+	/** Message shown on pause screen for closing */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Messages")
+	FString PauseQuitMessage = TEXT("Press X to close the game");
+
+	/** Message shown on pause screen for resuming */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Messages")
+	FString PauseResumeMessage = TEXT("Press C to continue");
+
+	/** Game over title */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Messages")
+	FString GameOverTitle = TEXT("GAME OVER");
+
+	/** Game over subtitle */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Messages")
+	FString GameOverSubtitle = TEXT("The base has been destroyed!");
+
+	/** Game over restart message */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Messages")
+	FString GameOverRestartMessage = TEXT("Press C to continue");
+
+	/** Wave complete title format (use %d for wave number) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Messages")
+	FString WaveCompleteTitle = TEXT("WAVE %d COMPLETE!");
+
+	/** Wave complete time format (use %.1f for seconds) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Messages")
+	FString WaveTimeMessage = TEXT("Time: %.1f seconds");
+
+	/** Wave complete next wave message */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Messages")
+	FString WaveNextMessage = TEXT("Press C to continue");
+
+	/** Wave start title format (use %d for wave number) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Messages")
+	FString WaveStartTitle = TEXT("WAVE %d");
+
 	// ==================== Radar ====================
 
 	/** Radar display radius on screen (pixels) */
@@ -181,8 +227,23 @@ private:
 	/** Draw radar display (top-right) */
 	void DrawRadar(class AFighterPawn* Fighter);
 
+	/** Draw speed and altitude readouts near center of screen */
+	void DrawSpeedAltitude(class AFighterPawn* Fighter);
+
 	/** Draw jet fighter HUD overlay (horizon line, pitch ladder, heading, speed/alt) */
 	void DrawJetHUD(class AFighterPawn* Fighter);
+
+	/** Draw full-screen overlay for game states (instructions, pause, game over, wave end) */
+	void DrawGameScreen(class AFighterPawn* Fighter);
+
+	/** Draw damage flash overlay */
+	void DrawDamageFlash(class AFighterPawn* Fighter);
+
+	/** Helper to draw centered text */
+	void DrawCenteredText(const FString& Text, float Y, FLinearColor Color, float Scale = 1.0f);
+
+	/** Helper to draw left-aligned text at a specific X position */
+	void DrawLeftAlignedText(const FString& Text, float X, float Y, FLinearColor Color, float Scale = 1.0f);
 
 	/** Draw a filled circle on the HUD canvas */
 	void DrawFilledCircle(float CenterX, float CenterY, float Radius, int32 Segments, FLinearColor Color);
