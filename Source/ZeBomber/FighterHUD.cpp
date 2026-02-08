@@ -228,7 +228,7 @@ void AFighterHUD::DrawScoreInfo(AFighterPawn* Fighter)
 	FString HPText = FString::Printf(TEXT("Base HP: %d/%d"), Fighter->GetBaseHP(), Fighter->GetBaseMaxHP());
 
 	// Draw semi-transparent background panel
-	float PanelWidth = 240.0f;
+	float PanelWidth = 140.0f;
 	float PanelHeight = LineSpacing * 4.0f + 16.0f;
 	FLinearColor PanelColor(0.0f, 0.0f, 0.0f, 0.4f);
 	Canvas->K2_DrawBox(FVector2D(X - 4.0f, Y - 4.0f), FVector2D(PanelWidth, PanelHeight), 1.0f, PanelColor);
@@ -278,7 +278,7 @@ void AFighterHUD::DrawSpeedAltitude(AFighterPawn* Fighter)
 	float CY = Canvas->SizeY * 0.5f;
 
 	FLinearColor SpeedColor(0.3f, 1.0f, 0.5f, 0.9f);
-	FLinearColor AltColor(0.4f, 0.8f, 1.0f, 0.9f);
+	FLinearColor AltColor(0.3f, 1.0f, 0.5f, 0.9f); // Same as speed
 	FLinearColor LabelColor(0.7f, 0.7f, 0.7f, 0.7f);
 	float ValueScale = 1.6f;
 	float LabelScale = 0.85f;
