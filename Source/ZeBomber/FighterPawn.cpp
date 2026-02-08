@@ -39,6 +39,10 @@ AFighterPawn::AFighterPawn()
 	// (SetupPlayerInputComponent runs BEFORE BeginPlay)
 	FreeLookAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_FreeLook_Auto"));
 	FreeLookAction->ValueType = EInputActionValueType::Boolean;
+
+	// Create ToggleJetHUDAction in constructor (/ key)
+	ToggleJetHUDAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_ToggleJetHUD_Auto"));
+	ToggleJetHUDAction->ValueType = EInputActionValueType::Boolean;
 }
 
 void AFighterPawn::BeginPlay()
@@ -79,6 +83,7 @@ void AFighterPawn::BeginPlay()
 	// Create a mapping context for free-look RMB (always works, no Blueprint needed)
 	UInputMappingContext* FreeLookMappingContext = NewObject<UInputMappingContext>(this, TEXT("IMC_FreeLook_Auto"));
 	FreeLookMappingContext->MapKey(FreeLookAction, EKeys::RightMouseButton);
+	FreeLookMappingContext->MapKey(ToggleJetHUDAction, EKeys::Slash);
 	UE_LOG(LogTemp, Warning, TEXT("FighterPawn: Created FreeLook mapping context with RMB"));
 
 	// Add input mapping contexts
@@ -239,6 +244,12 @@ void AFighterPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 			EIC->BindAction(FreeLookAction, ETriggerEvent::Completed, this, &AFighterPawn::OnFreeLookReleased);
 		}
 
+		// / = Toggle Jet HUD
+		if (ToggleJetHUDAction)
+		{
+			EIC->BindAction(ToggleJetHUDAction, ETriggerEvent::Started, this, &AFighterPawn::OnToggleJetHUD);
+		}
+
 		// Volume controls (+ / -)
 		if (VolumeUpAction)
 		{
@@ -352,6 +363,12 @@ void AFighterPawn::OnSensitivityDown(const FInputActionValue& Value)
 {
 	AimSensitivity = FMath::Clamp(AimSensitivity - SensitivityStep, MinSensitivity, MaxSensitivity);
 	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Sensitivity DOWN -> %.1f"), AimSensitivity);
+}
+
+void AFighterPawn::OnToggleJetHUD(const FInputActionValue& Value)
+{
+	bJetHUDEnabled = !bJetHUDEnabled;
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Jet HUD %s"), bJetHUDEnabled ? TEXT("ON") : TEXT("OFF"));
 }
 
 // ==================== Flight Logic ====================

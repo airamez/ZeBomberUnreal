@@ -21,6 +21,7 @@ The **FighterPawn** is a first-person cockpit-view pawn. The camera sits at the 
 | **Right Click (hold)** | Free-look camera (look around while flying) |
 | **Space** | Drop bomb |
 | **Mouse Scroll Up/Down** | Zoom radar in/out |
+| **/** | Toggle jet HUD on/off |
 
 ### Crosshairs
 
@@ -67,6 +68,31 @@ A square radar display in the top-right corner shows enemies within range. The r
 #### Radar Controls
 - **Mouse Scroll Up** — Zoom in (see nearby enemies in more detail)
 - **Mouse Scroll Down** — Zoom out (see farther enemies)
+
+### Jet HUD (Pitch Ladder)
+
+A compact green fighter jet HUD overlay at screen center showing aircraft orientation relative to the ground. Press **/** to toggle it on/off. The current state is shown in the bottom-right settings panel.
+
+#### Elements
+- **Horizon line** — Tilts with roll, moves with pitch. Shows where level flight is.
+- **Pitch ladder** — ±10° and ±20° lines. Solid above horizon, dashed below. Degree labels on the right.
+- **Aircraft symbol** — Fixed wings + center dot at screen center. Compare against the horizon to see your pitch/roll.
+- **Heading** — "HDG 270" text above the ladder showing compass heading.
+- **Speed** — Shown in knots to the left of the ladder.
+- **Altitude** — Shown in feet to the right of the ladder.
+
+#### Parameters (HUD|JetHUD category)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| **Jet HUD Color** | Main overlay color (classic green) | (0, 1, 0.2, 0.7) |
+| **Jet HUD Dim Color** | Secondary/below-horizon color | (0, 1, 0.2, 0.35) |
+| **Jet HUD Thickness** | Line thickness | 1.5 |
+| **Horizon Line Width** | Width of horizon line from center (px) | 100 |
+| **Pitch Ladder Width** | Width of pitch lines (px) | 60 |
+| **Pitch Pixels Per Degree** | Spacing between pitch lines | 4 |
+| **Pitch Ladder Step** | Degrees between lines | 10 |
+| **Pitch Ladder Range** | Max degrees shown (±) | 20 |
 
 ---
 

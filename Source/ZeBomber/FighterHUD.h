@@ -89,6 +89,40 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Text", meta = (ClampMin = "0.0"))
 	float LineSpacing = 24.0f;
 
+	// ==================== Jet HUD (Pitch Ladder / Horizon) ====================
+
+	/** Color of the jet HUD overlay (classic yellow-green) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|JetHUD")
+	FLinearColor JetHUDColor = FLinearColor(0.0f, 1.0f, 0.2f, 0.7f);
+
+	/** Dimmer color for secondary elements */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|JetHUD")
+	FLinearColor JetHUDDimColor = FLinearColor(0.0f, 1.0f, 0.2f, 0.35f);
+
+	/** Line thickness for jet HUD elements */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|JetHUD", meta = (ClampMin = "0.5"))
+	float JetHUDThickness = 1.5f;
+
+	/** Width of the horizon line (pixels from center) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|JetHUD", meta = (ClampMin = "20.0"))
+	float HorizonLineWidth = 100.0f;
+
+	/** Width of pitch ladder lines (pixels) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|JetHUD", meta = (ClampMin = "10.0"))
+	float PitchLadderWidth = 60.0f;
+
+	/** Pixels per degree for pitch ladder spacing */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|JetHUD", meta = (ClampMin = "1.0"))
+	float PitchPixelsPerDegree = 4.0f;
+
+	/** Pitch ladder step in degrees (a line every N degrees) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|JetHUD", meta = (ClampMin = "1"))
+	int32 PitchLadderStep = 10;
+
+	/** Max pitch degrees shown on ladder above/below horizon */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|JetHUD", meta = (ClampMin = "10"))
+	int32 PitchLadderRange = 20;
+
 	// ==================== Radar ====================
 
 	/** Radar display radius on screen (pixels) */
@@ -146,6 +180,9 @@ private:
 
 	/** Draw radar display (top-right) */
 	void DrawRadar(class AFighterPawn* Fighter);
+
+	/** Draw jet fighter HUD overlay (horizon line, pitch ladder, heading, speed/alt) */
+	void DrawJetHUD(class AFighterPawn* Fighter);
 
 	/** Draw a filled circle on the HUD canvas */
 	void DrawFilledCircle(float CenterX, float CenterY, float Radius, int32 Segments, FLinearColor Color);

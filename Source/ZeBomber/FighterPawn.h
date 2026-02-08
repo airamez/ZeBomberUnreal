@@ -78,6 +78,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	float GetRadarZoom() const { return RadarZoom; }
 
+	/** Returns whether the jet HUD overlay is enabled */
+	UFUNCTION(BlueprintCallable, Category = "Settings")
+	bool IsJetHUDEnabled() const { return bJetHUDEnabled; }
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -271,6 +275,9 @@ protected:
 	UInputAction* FreeLookAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* ToggleJetHUDAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* VolumeUpAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -330,9 +337,12 @@ private:
 
 	/** Volume/sensitivity step per key press */
 	float VolumeStep = 0.05f;
-	float SensitivityStep = 0.1f;
+	float SensitivityStep = 0.5f;
 	float MinSensitivity = 0.1f;
 	float MaxSensitivity = 5.0f;
+
+	/** Whether the jet HUD overlay is shown */
+	bool bJetHUDEnabled = true;
 
 	/** Radar zoom level (1.0 = default, lower = zoomed in, higher = zoomed out) */
 	float RadarZoom = 1.0f;
@@ -378,6 +388,7 @@ private:
 	void OnVolumeDown(const FInputActionValue& Value);
 	void OnSensitivityUp(const FInputActionValue& Value);
 	void OnSensitivityDown(const FInputActionValue& Value);
+	void OnToggleJetHUD(const FInputActionValue& Value);
 
 	// ==================== Core Logic ====================
 

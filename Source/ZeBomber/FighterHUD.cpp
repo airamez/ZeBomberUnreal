@@ -74,6 +74,12 @@ void AFighterHUD::DrawHUD()
 		}
 	}
 
+	// ==================== Jet HUD Overlay ====================
+	if (Fighter->IsJetHUDEnabled())
+	{
+		DrawJetHUD(Fighter);
+	}
+
 	// ==================== HUD Text & Radar ====================
 	DrawSettingsInfo(Fighter);
 	DrawScoreInfo(Fighter);
@@ -136,7 +142,7 @@ void AFighterHUD::DrawSettingsInfo(AFighterPawn* Fighter)
 
 	// Position at bottom-right
 	float PanelWidth = 300.0f;
-	float PanelHeight = LineSpacing * 2.0f + 16.0f;
+	float PanelHeight = LineSpacing * 3.0f + 16.0f;
 	float X = CanvasWidth - ScreenMargin - PanelWidth;
 	float Y = CanvasHeight - ScreenMargin - PanelHeight;
 
@@ -162,6 +168,16 @@ void AFighterHUD::DrawSettingsInfo(AFighterPawn* Fighter)
 	SensItem.bOutlined = true;
 	SensItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
 	Canvas->DrawItem(SensItem);
+
+	Y += LineSpacing;
+
+	// Jet HUD Toggle
+	FString HudText = FString::Printf(TEXT("Jet HUD: %s  [/]"), Fighter->IsJetHUDEnabled() ? TEXT("ON") : TEXT("OFF"));
+	FCanvasTextItem HudItem(FVector2D(X, Y), FText::FromString(HudText), HUDFont, SettingsTextColor);
+	HudItem.Scale = FVector2D(TextScale, TextScale);
+	HudItem.bOutlined = true;
+	HudItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
+	Canvas->DrawItem(HudItem);
 }
 
 void AFighterHUD::DrawScoreInfo(AFighterPawn* Fighter)
@@ -376,5 +392,137 @@ void AFighterHUD::DrawRadar(AFighterPawn* Fighter)
 		LabelItem.bOutlined = true;
 		LabelItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.5f);
 		Canvas->DrawItem(LabelItem);
+	}
+}
+
+// ==================== Jet Fighter HUD Overlay ====================
+
+void AFighterHUD::DrawJetHUD(AFighterPawn* Fighter)
+{
+	if (!Canvas || !Fighter || !HUDFont) return;
+
+	float CX = Canvas->SizeX * 0.5f;
+	float CY = Canvas->SizeY * 0.5f;
+
+	FRotator Rot = Fighter->GetActorRotation();
+	float PitchDeg = Rot.Pitch;
+	float RollRad = FMath::DegreesToRadians(Rot.Roll);
+	float YawDeg = Rot.Yaw;
+	if (YawDeg < 0.0f) YawDeg += 360.0f;
+
+	float CosR = FMath::Cos(RollRad);
+	float SinR = FMath::Sin(RollRad);
+
+	// Helper lambda: rotate a point around screen center by roll angle
+	auto RotatePoint = [&](float X, float Y) -> FVector2D
+	{
+		float RX = X * CosR - Y * SinR;
+		float RY = X * SinR + Y * CosR;
+		return FVector2D(CX + RX, CY + RY);
+	};
+
+	float HW = HorizonLineWidth;
+	float LadderHalfW = PitchLadderWidth * 0.5f;
+	float GapHalfW = 15.0f;
+
+	// ---- Horizon Line ----
+	float HorizonOffset = PitchDeg * PitchPixelsPerDegree;
+	FVector2D HL = RotatePoint(-HW, HorizonOffset);
+	FVector2D HR = RotatePoint(HW, HorizonOffset);
+	Canvas->K2_DrawLine(HL, HR, JetHUDThickness + 0.5f, JetHUDColor);
+
+	// Small ticks at horizon ends
+	FVector2D HLT = RotatePoint(-HW, HorizonOffset - 6.0f);
+	FVector2D HRT = RotatePoint(HW, HorizonOffset - 6.0f);
+	Canvas->K2_DrawLine(HL, HLT, JetHUDThickness, JetHUDColor);
+	Canvas->K2_DrawLine(HR, HRT, JetHUDThickness, JetHUDColor);
+
+	// ---- Pitch Ladder (only ±10 and ±20 = 4 lines total) ----
+	for (int32 Deg = -PitchLadderRange; Deg <= PitchLadderRange; Deg += PitchLadderStep)
+	{
+		if (Deg == 0) continue;
+
+		float YOff = (PitchDeg - static_cast<float>(Deg)) * PitchPixelsPerDegree;
+		if (FMath::Abs(YOff) > CY * 0.7f) continue;
+
+		bool bNeg = (Deg < 0);
+		FLinearColor LineColor = bNeg ? JetHUDDimColor : JetHUDColor;
+
+		if (bNeg)
+		{
+			// Dashed line for below horizon
+			float SegLen = (LadderHalfW - GapHalfW) * 0.4f;
+			float SegGap = (LadderHalfW - GapHalfW) * 0.2f;
+			for (int32 d = 0; d < 2; d++)
+			{
+				float S = GapHalfW + d * (SegLen + SegGap);
+				float E = S + SegLen;
+				Canvas->K2_DrawLine(RotatePoint(-E, YOff), RotatePoint(-S, YOff), JetHUDThickness, LineColor);
+				Canvas->K2_DrawLine(RotatePoint(S, YOff), RotatePoint(E, YOff), JetHUDThickness, LineColor);
+			}
+		}
+		else
+		{
+			// Solid line for above horizon (with center gap)
+			Canvas->K2_DrawLine(RotatePoint(-LadderHalfW, YOff), RotatePoint(-GapHalfW, YOff), JetHUDThickness, LineColor);
+			Canvas->K2_DrawLine(RotatePoint(GapHalfW, YOff), RotatePoint(LadderHalfW, YOff), JetHUDThickness, LineColor);
+		}
+
+		// Small end ticks (up for positive, down for negative)
+		float TickDir = bNeg ? 4.0f : -4.0f;
+		Canvas->K2_DrawLine(RotatePoint(-LadderHalfW, YOff), RotatePoint(-LadderHalfW, YOff + TickDir), JetHUDThickness, LineColor);
+		Canvas->K2_DrawLine(RotatePoint(LadderHalfW, YOff), RotatePoint(LadderHalfW, YOff + TickDir), JetHUDThickness, LineColor);
+
+		// Degree label (right side only, compact)
+		FString DegStr = FString::Printf(TEXT("%d"), Deg);
+		FVector2D LabelPos = RotatePoint(LadderHalfW + 5.0f, YOff - 5.0f);
+		FCanvasTextItem Label(LabelPos, FText::FromString(DegStr), HUDFont, LineColor);
+		Label.Scale = FVector2D(0.55f, 0.55f);
+		Label.bOutlined = true;
+		Label.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.4f);
+		Canvas->DrawItem(Label);
+	}
+
+	// ---- Aircraft Reference Symbol (fixed at center) ----
+	float WingW = 18.0f;
+	float WingGap = 6.0f;
+
+	Canvas->K2_DrawLine(FVector2D(CX - WingGap, CY), FVector2D(CX - WingGap - WingW, CY), JetHUDThickness + 0.5f, JetHUDColor);
+	Canvas->K2_DrawLine(FVector2D(CX - WingGap - WingW, CY), FVector2D(CX - WingGap - WingW, CY + 4.0f), JetHUDThickness + 0.5f, JetHUDColor);
+	Canvas->K2_DrawLine(FVector2D(CX + WingGap, CY), FVector2D(CX + WingGap + WingW, CY), JetHUDThickness + 0.5f, JetHUDColor);
+	Canvas->K2_DrawLine(FVector2D(CX + WingGap + WingW, CY), FVector2D(CX + WingGap + WingW, CY + 4.0f), JetHUDThickness + 0.5f, JetHUDColor);
+	DrawCircle(CX, CY, 2.0f, 6, JetHUDColor, JetHUDThickness);
+
+	// ---- Compact Heading Text (just above the ladder) ----
+	{
+		int32 Heading = FMath::RoundToInt32(YawDeg) % 360;
+		if (Heading < 0) Heading += 360;
+		FString HdgStr = FString::Printf(TEXT("HDG %03d"), Heading);
+		float TextX = CX - 22.0f;
+		float TextY = CY - HW * 0.6f - 14.0f;
+		FCanvasTextItem HdgTxt(FVector2D(TextX, TextY), FText::FromString(HdgStr), HUDFont, JetHUDDimColor);
+		HdgTxt.Scale = FVector2D(0.55f, 0.55f);
+		HdgTxt.bOutlined = true;
+		HdgTxt.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.4f);
+		Canvas->DrawItem(HdgTxt);
+	}
+
+	// ---- Compact Speed & Altitude (left and right of ladder) ----
+	{
+		int32 SpeedKnots = FMath::RoundToInt32(Fighter->GetCurrentSpeed() * 0.0194384f);
+		FString SpdStr = FString::Printf(TEXT("%d"), SpeedKnots);
+		FCanvasTextItem SpdTxt(FVector2D(CX - HW - 40.0f, CY - 7.0f), FText::FromString(SpdStr), HUDFont, JetHUDColor);
+		SpdTxt.Scale = FVector2D(0.65f, 0.65f);
+		SpdTxt.bOutlined = true;
+		SpdTxt.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.4f);
+		Canvas->DrawItem(SpdTxt);
+
+		int32 AltFeet = FMath::RoundToInt32(Fighter->GetActorLocation().Z * 0.0328084f);
+		FString AltStr = FString::Printf(TEXT("%d"), AltFeet);
+		FCanvasTextItem AltTxt(FVector2D(CX + HW + 10.0f, CY - 7.0f), FText::FromString(AltStr), HUDFont, JetHUDColor);
+		AltTxt.Scale = FVector2D(0.65f, 0.65f);
+		AltTxt.bOutlined = true;
+		AltTxt.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.4f);
+		Canvas->DrawItem(AltTxt);
 	}
 }
