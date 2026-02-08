@@ -34,7 +34,7 @@ ARocketProjectile::ARocketProjectile()
 	ProjectileMovement->UpdatedComponent = CollisionComponent;
 	ProjectileMovement->InitialSpeed = RocketSpeed;
 	ProjectileMovement->MaxSpeed = RocketSpeed;
-	ProjectileMovement->bRotationFollowsVelocity = false;
+	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = false;
 	ProjectileMovement->ProjectileGravityScale = 0.0f; // No gravity - flies straight
 }

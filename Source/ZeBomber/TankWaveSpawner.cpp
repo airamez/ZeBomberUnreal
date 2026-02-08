@@ -17,26 +17,7 @@ void ATankWaveSpawner::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// Find the base target if not set
-	if (!BaseTarget)
-	{
-		// Try to find actor with the church mesh by tag or name
-		TArray<AActor*> FoundActors;
-		UGameplayStatics::GetAllActorsOfClass(GetWorld(), AActor::StaticClass(), FoundActors);
-		
-		for (AActor* Actor : FoundActors)
-		{
-			if (Actor && Actor->GetName().Contains("old_wooden_church"))
-			{
-				BaseTarget = Actor;
-				break;
-			}
-		}
-		
-		// Fallback to world origin if no base found
-		if (!BaseTarget)
-			UE_LOG(LogTemp, Warning, TEXT("TankWaveSpawner: No base target found! Tanks will move to world origin."));
-	}
+	UE_LOG(LogTemp, Log, TEXT("TankWaveSpawner: Base target is world origin (0,0,0)"));
 	
 	// Start first wave
 	ScheduleNextWave();
@@ -81,8 +62,8 @@ void ATankWaveSpawner::SpawnWave()
 			continue;
 		}
 		
-		// Calculate rotation to face the base
-		FVector TargetLocation = BaseTarget ? BaseTarget->GetActorLocation() : FVector::ZeroVector;
+		// Calculate rotation to face the base at world origin
+		FVector TargetLocation = FVector::ZeroVector;
 		FRotator SpawnRotation = (TargetLocation - SpawnLocation).Rotation();
 		SpawnRotation.Pitch = 0.0f;
 		SpawnRotation.Roll = 0.0f;

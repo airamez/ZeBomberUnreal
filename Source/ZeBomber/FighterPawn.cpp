@@ -2,6 +2,8 @@
 
 #include "FighterPawn.h"
 #include "RocketProjectile.h"
+#include "TankAI.h"
+#include "HeliAI.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SceneComponent.h"
 #include "EnhancedInputComponent.h"
@@ -9,6 +11,7 @@
 #include "InputMappingContext.h"
 #include "InputAction.h"
 #include "Kismet/GameplayStatics.h"
+#include "EngineUtils.h"
 
 AFighterPawn::AFighterPawn()
 {
@@ -18,9 +21,13 @@ AFighterPawn::AFighterPawn()
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	RootComponent = SceneRoot;
 
-	// Create first-person camera (at the nose of the invisible airplane)
+	// Create camera pivot for free-look (rotates independently of flight)
+	CameraPivot = CreateDefaultSubobject<USceneComponent>(TEXT("CameraPivot"));
+	CameraPivot->SetupAttachment(SceneRoot);
+
+	// Create first-person camera attached to pivot
 	NoseCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("NoseCamera"));
-	NoseCamera->SetupAttachment(SceneRoot);
+	NoseCamera->SetupAttachment(CameraPivot);
 	NoseCamera->bUsePawnControlRotation = false;
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
@@ -44,13 +51,21 @@ void AFighterPawn::BeginPlay()
 	// Initialize speed
 	CurrentSpeed = DefaultSpeed;
 
-	// Apply camera offset and pitch
+	// Apply camera offset and pitch to the camera (relative to pivot)
 	if (NoseCamera)
 	{
 		NoseCamera->SetRelativeLocation(CameraOffset);
 		NoseCamera->SetRelativeRotation(FRotator(CameraPitchOffset, 0.0f, 0.0f));
 		UE_LOG(LogTemp, Warning, TEXT("FighterPawn: Camera configured - Offset=%s, PitchOffset=%.1f"),
 			*CameraOffset.ToString(), CameraPitchOffset);
+	}
+
+	// Initialize virtual cursor to screen center
+	if (APlayerController* PC = Cast<APlayerController>(Controller))
+	{
+		int32 SizeX, SizeY;
+		PC->GetViewportSize(SizeX, SizeY);
+		VirtualCursorPos = FVector2D(SizeX * 0.5f, SizeY * 0.5f);
 	}
 
 	// Add input mapping context
@@ -70,13 +85,20 @@ void AFighterPawn::BeginPlay()
 		}
 	}
 
-	// Hide OS mouse cursor - the FighterHUD draws custom crosshairs
+	// Hide OS mouse cursor and use Game-only input mode for zero-lag mouse
 	if (APlayerController* PC = Cast<APlayerController>(Controller))
 	{
 		PC->bShowMouseCursor = false;
 		PC->bEnableClickEvents = false;
 		PC->bEnableMouseOverEvents = false;
+
+		// Game-only mode: raw mouse input, no Slate cursor processing = zero lag
+		FInputModeGameOnly InputMode;
+		PC->SetInputMode(InputMode);
 	}
+
+	// Bind to existing enemy destruction events for score tracking
+	BindEnemyDestroyedEvents();
 
 	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Initialized at altitude %.0f, speed %.0f"), StartAltitude, CurrentSpeed);
 }
@@ -97,9 +119,31 @@ void AFighterPawn::Tick(float DeltaTime)
 		return;
 	}
 
+	// Read raw mouse delta ONCE per frame (consumed on read, so only call once)
+	APlayerController* PC = Cast<APlayerController>(Controller);
+	if (PC)
+	{
+		PC->GetInputMouseDelta(FrameMouseDeltaX, FrameMouseDeltaY);
+	}
+	else
+	{
+		FrameMouseDeltaX = 0.0f;
+		FrameMouseDeltaY = 0.0f;
+	}
+
 	UpdateFlight(DeltaTime);
+	UpdateVirtualCursor(DeltaTime);
+	UpdateFreeLook(DeltaTime);
 	UpdateMouseAim();
 	UpdateBombImpactPrediction();
+
+	// Periodically re-bind to newly spawned enemies (every ~1 second)
+	EnemyScanTimer -= DeltaTime;
+	if (EnemyScanTimer <= 0.0f)
+	{
+		BindEnemyDestroyedEvents();
+		EnemyScanTimer = 1.0f;
+	}
 
 	// Auto-fire rockets while button is held
 	if (bFireRocketHeld)
@@ -153,6 +197,33 @@ void AFighterPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		{
 			EIC->BindAction(FireRocketAction, ETriggerEvent::Triggered, this, &AFighterPawn::OnFireRocket);
 			EIC->BindAction(FireRocketAction, ETriggerEvent::Completed, this, &AFighterPawn::OnFireRocketReleased);
+		}
+
+		// Right Mouse = Free Look
+		if (FreeLookAction)
+		{
+			EIC->BindAction(FreeLookAction, ETriggerEvent::Triggered, this, &AFighterPawn::OnFreeLookPressed);
+			EIC->BindAction(FreeLookAction, ETriggerEvent::Completed, this, &AFighterPawn::OnFreeLookReleased);
+		}
+
+		// Volume controls (+ / -)
+		if (VolumeUpAction)
+		{
+			EIC->BindAction(VolumeUpAction, ETriggerEvent::Started, this, &AFighterPawn::OnVolumeUp);
+		}
+		if (VolumeDownAction)
+		{
+			EIC->BindAction(VolumeDownAction, ETriggerEvent::Started, this, &AFighterPawn::OnVolumeDown);
+		}
+
+		// Sensitivity controls (< / >)
+		if (SensitivityUpAction)
+		{
+			EIC->BindAction(SensitivityUpAction, ETriggerEvent::Started, this, &AFighterPawn::OnSensitivityUp);
+		}
+		if (SensitivityDownAction)
+		{
+			EIC->BindAction(SensitivityDownAction, ETriggerEvent::Started, this, &AFighterPawn::OnSensitivityDown);
 		}
 	}
 }
@@ -216,6 +287,40 @@ void AFighterPawn::OnFireRocketReleased(const FInputActionValue& Value)
 	bFireRocketHeld = false;
 }
 
+void AFighterPawn::OnFreeLookPressed(const FInputActionValue& Value)
+{
+	bFreeLookActive = true;
+}
+
+void AFighterPawn::OnFreeLookReleased(const FInputActionValue& Value)
+{
+	bFreeLookActive = false;
+}
+
+void AFighterPawn::OnVolumeUp(const FInputActionValue& Value)
+{
+	SoundVolume = FMath::Clamp(SoundVolume + VolumeStep, 0.0f, 1.0f);
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Volume UP -> %.0f%%"), SoundVolume * 100.0f);
+}
+
+void AFighterPawn::OnVolumeDown(const FInputActionValue& Value)
+{
+	SoundVolume = FMath::Clamp(SoundVolume - VolumeStep, 0.0f, 1.0f);
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Volume DOWN -> %.0f%%"), SoundVolume * 100.0f);
+}
+
+void AFighterPawn::OnSensitivityUp(const FInputActionValue& Value)
+{
+	AimSensitivity = FMath::Clamp(AimSensitivity + SensitivityStep, MinSensitivity, MaxSensitivity);
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Sensitivity UP -> %.1f"), AimSensitivity);
+}
+
+void AFighterPawn::OnSensitivityDown(const FInputActionValue& Value)
+{
+	AimSensitivity = FMath::Clamp(AimSensitivity - SensitivityStep, MinSensitivity, MaxSensitivity);
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Sensitivity DOWN -> %.1f"), AimSensitivity);
+}
+
 // ==================== Flight Logic ====================
 
 void AFighterPawn::UpdateFlight(float DeltaTime)
@@ -273,6 +378,61 @@ void AFighterPawn::UpdateFlight(float DeltaTime)
 	SetActorLocation(NewLocation);
 }
 
+// ==================== Virtual Cursor (Zero-Lag) ====================
+
+void AFighterPawn::UpdateVirtualCursor(float DeltaTime)
+{
+	// During free-look, mouse moves the camera, not the crosshair
+	if (bFreeLookActive) return;
+
+	APlayerController* PC = Cast<APlayerController>(Controller);
+	if (!PC) return;
+
+	// Use cached frame mouse delta (negate Y: UE positive DeltaY = mouse up, but screen Y increases down)
+	VirtualCursorPos.X += FrameMouseDeltaX * AimSensitivity;
+	VirtualCursorPos.Y -= FrameMouseDeltaY * AimSensitivity;
+
+	// Clamp to viewport bounds
+	int32 SizeX, SizeY;
+	PC->GetViewportSize(SizeX, SizeY);
+	VirtualCursorPos.X = FMath::Clamp(VirtualCursorPos.X, 0.0f, static_cast<float>(SizeX));
+	VirtualCursorPos.Y = FMath::Clamp(VirtualCursorPos.Y, 0.0f, static_cast<float>(SizeY));
+}
+
+// ==================== Free-Look Camera ====================
+
+void AFighterPawn::UpdateFreeLook(float DeltaTime)
+{
+	if (!CameraPivot) return;
+
+	if (bFreeLookActive)
+	{
+		// Use cached frame mouse delta for free-look rotation
+		FreeLookRotation.Yaw += FrameMouseDeltaX * FreeLookSensitivity;
+		FreeLookRotation.Pitch -= FrameMouseDeltaY * FreeLookSensitivity;
+
+		// Clamp free-look angles
+		FreeLookRotation.Yaw = FMath::Clamp(FreeLookRotation.Yaw, -FreeLookMaxYaw, FreeLookMaxYaw);
+		FreeLookRotation.Pitch = FMath::Clamp(FreeLookRotation.Pitch, -FreeLookMaxPitch, FreeLookMaxPitch);
+
+		CameraPivot->SetRelativeRotation(FreeLookRotation);
+	}
+	else
+	{
+		// Smoothly return camera to forward position
+		if (!FreeLookRotation.IsNearlyZero(0.1f))
+		{
+			FreeLookRotation = FMath::RInterpTo(FreeLookRotation, FRotator::ZeroRotator, DeltaTime, FreeLookReturnSpeed);
+			CameraPivot->SetRelativeRotation(FreeLookRotation);
+		}
+		else if (!FreeLookRotation.IsZero())
+		{
+			FreeLookRotation = FRotator::ZeroRotator;
+			CameraPivot->SetRelativeRotation(FRotator::ZeroRotator);
+		}
+	}
+}
+
 // ==================== Mouse Aim (White Crosshair) ====================
 
 void AFighterPawn::UpdateMouseAim()
@@ -280,27 +440,24 @@ void AFighterPawn::UpdateMouseAim()
 	APlayerController* PC = Cast<APlayerController>(Controller);
 	if (!PC) return;
 
-	float MouseX, MouseY;
-	if (PC->GetMousePosition(MouseX, MouseY))
+	// Use virtual cursor position for deprojection (zero-lag)
+	FVector WorldLocation, WorldDirection;
+	if (PC->DeprojectScreenPositionToWorld(VirtualCursorPos.X, VirtualCursorPos.Y, WorldLocation, WorldDirection))
 	{
-		FVector WorldLocation, WorldDirection;
-		if (PC->DeprojectScreenPositionToWorld(MouseX, MouseY, WorldLocation, WorldDirection))
+		FVector TraceStart = WorldLocation;
+		FVector TraceEnd = WorldLocation + (WorldDirection * CrosshairMaxDistance);
+
+		FHitResult HitResult;
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(this);
+
+		if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams))
 		{
-			FVector TraceStart = WorldLocation;
-			FVector TraceEnd = WorldLocation + (WorldDirection * CrosshairMaxDistance);
-
-			FHitResult HitResult;
-			FCollisionQueryParams QueryParams;
-			QueryParams.AddIgnoredActor(this);
-
-			if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams))
-			{
-				RocketAimWorldTarget = HitResult.ImpactPoint;
-			}
-			else
-			{
-				RocketAimWorldTarget = TraceEnd;
-			}
+			RocketAimWorldTarget = HitResult.ImpactPoint;
+		}
+		else
+		{
+			RocketAimWorldTarget = TraceEnd;
 		}
 	}
 }
@@ -425,7 +582,7 @@ void AFighterPawn::DropBomb()
 		// Play bomb release sound
 		if (BombDropSound)
 		{
-			UGameplayStatics::PlaySoundAtLocation(this, BombDropSound, SpawnLocation);
+			UGameplayStatics::PlaySoundAtLocation(this, BombDropSound, SpawnLocation, SoundVolume);
 		}
 
 		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Bomb dropped at %s with speed %.0f"), *SpawnLocation.ToString(), CurrentSpeed);
@@ -470,5 +627,50 @@ void AFighterPawn::FireRocket()
 		}
 
 		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Rocket fired toward %s"), *RocketAimWorldTarget.ToString());
+	}
+}
+
+// ==================== Score Tracking ====================
+
+void AFighterPawn::BindEnemyDestroyedEvents()
+{
+	if (!GetWorld()) return;
+
+	// Bind to all TankAI actors
+	for (TActorIterator<ATankAI> It(GetWorld()); It; ++It)
+	{
+		AActor* Tank = *It;
+		if (!BoundEnemies.Contains(Tank))
+		{
+			Tank->OnDestroyed.AddDynamic(this, &AFighterPawn::OnEnemyDestroyed);
+			BoundEnemies.Add(Tank);
+		}
+	}
+
+	// Bind to all HeliAI actors
+	for (TActorIterator<AHeliAI> It(GetWorld()); It; ++It)
+	{
+		AActor* Heli = *It;
+		if (!BoundEnemies.Contains(Heli))
+		{
+			Heli->OnDestroyed.AddDynamic(this, &AFighterPawn::OnEnemyDestroyed);
+			BoundEnemies.Add(Heli);
+		}
+	}
+}
+
+void AFighterPawn::OnEnemyDestroyed(AActor* DestroyedActor)
+{
+	BoundEnemies.Remove(DestroyedActor);
+
+	if (DestroyedActor->IsA<ATankAI>())
+	{
+		TanksDestroyed++;
+		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Tank destroyed! Total: %d"), TanksDestroyed);
+	}
+	else if (DestroyedActor->IsA<AHeliAI>())
+	{
+		HelisDestroyed++;
+		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Heli destroyed! Total: %d"), HelisDestroyed);
 	}
 }

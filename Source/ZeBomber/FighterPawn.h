@@ -8,6 +8,7 @@
 #include "FighterPawn.generated.h"
 
 class UCameraComponent;
+class USceneComponent;
 class UInputMappingContext;
 class UInputAction;
 class USoundBase;
@@ -34,6 +35,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Fighter")
 	FVector GetRocketAimPoint() const { return RocketAimWorldTarget; }
 
+	/** Returns the virtual cursor screen position (used by HUD) */
+	UFUNCTION(BlueprintCallable, Category = "Fighter")
+	FVector2D GetCursorScreenPosition() const { return VirtualCursorPos; }
+
+	/** Returns whether free-look is active (used by HUD) */
+	UFUNCTION(BlueprintCallable, Category = "Fighter")
+	bool IsFreeLookActive() const { return bFreeLookActive; }
+
 	/** Returns current forward speed */
 	UFUNCTION(BlueprintCallable, Category = "Fighter")
 	float GetCurrentSpeed() const { return CurrentSpeed; }
@@ -41,6 +50,29 @@ public:
 	/** Returns current altitude (Z) */
 	UFUNCTION(BlueprintCallable, Category = "Fighter")
 	float GetCurrentAltitude() const { return GetActorLocation().Z; }
+
+	/** Returns number of tanks destroyed */
+	UFUNCTION(BlueprintCallable, Category = "Score")
+	int32 GetTanksDestroyed() const { return TanksDestroyed; }
+
+	/** Returns number of helicopters destroyed */
+	UFUNCTION(BlueprintCallable, Category = "Score")
+	int32 GetHelisDestroyed() const { return HelisDestroyed; }
+
+	/** Called by projectiles when they destroy an enemy */
+	UFUNCTION(BlueprintCallable, Category = "Score")
+	void AddTankKill() { TanksDestroyed++; }
+
+	UFUNCTION(BlueprintCallable, Category = "Score")
+	void AddHeliKill() { HelisDestroyed++; }
+
+	/** Returns current sound volume (0.0 - 1.0) */
+	UFUNCTION(BlueprintCallable, Category = "Settings")
+	float GetSoundVolume() const { return SoundVolume; }
+
+	/** Returns current aim sensitivity */
+	UFUNCTION(BlueprintCallable, Category = "Settings")
+	float GetAimSensitivity() const { return AimSensitivity; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -52,6 +84,10 @@ protected:
 	/** Root scene component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Fighter")
 	class USceneComponent* SceneRoot;
+
+	/** Pivot for free-look camera rotation (does not affect flight direction) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	USceneComponent* CameraPivot;
 
 	/** First-person camera at the nose of the airplane */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
@@ -69,6 +105,28 @@ protected:
 	 *  Use this to tilt the default view slightly downward for better ground visibility. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", meta = (ClampMin = "-89.0", ClampMax = "89.0"))
 	float CameraPitchOffset = 0.0f;
+
+	// ==================== Free-Look (Right Mouse Button) ====================
+
+	/** Mouse sensitivity for free-look (degrees per pixel) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FreeLook", meta = (ClampMin = "0.01"))
+	float FreeLookSensitivity = 0.15f;
+
+	/** Maximum free-look yaw angle from center (degrees) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FreeLook", meta = (ClampMin = "1.0"))
+	float FreeLookMaxYaw = 120.0f;
+
+	/** Maximum free-look pitch angle from center (degrees) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FreeLook", meta = (ClampMin = "1.0"))
+	float FreeLookMaxPitch = 80.0f;
+
+	/** Speed at which the camera returns to forward after releasing RMB (higher = faster) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FreeLook", meta = (ClampMin = "0.5"))
+	float FreeLookReturnSpeed = 5.0f;
+
+	/** Mouse sensitivity for aiming crosshair (pixels per raw mouse unit) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FreeLook", meta = (ClampMin = "0.1"))
+	float AimSensitivity = 2.5f;
 
 	// ==================== Flight Parameters ====================
 
@@ -202,7 +260,19 @@ protected:
 	UInputAction* FireRocketAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* MouseMoveAction;
+	UInputAction* FreeLookAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* VolumeUpAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* VolumeDownAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* SensitivityUpAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* SensitivityDownAction;
 
 private:
 	// ==================== Internal State ====================
@@ -243,6 +313,38 @@ private:
 	/** Whether the bomb impact prediction is valid (hits ground) */
 	bool bBombImpactValid = false;
 
+	/** Score tracking */
+	int32 TanksDestroyed = 0;
+	int32 HelisDestroyed = 0;
+
+	/** Sound volume (0.0 - 1.0) */
+	float SoundVolume = 0.5f;
+
+	/** Volume/sensitivity step per key press */
+	float VolumeStep = 0.05f;
+	float SensitivityStep = 0.1f;
+	float MinSensitivity = 0.1f;
+	float MaxSensitivity = 5.0f;
+
+	/** Timer for periodic enemy scanning */
+	float EnemyScanTimer = 0.0f;
+
+	/** Set of enemies we've already bound OnDestroyed to (avoid double-binding) */
+	TSet<AActor*> BoundEnemies;
+
+	/** Cached mouse delta for current frame (read once, used by cursor + free-look) */
+	float FrameMouseDeltaX = 0.0f;
+	float FrameMouseDeltaY = 0.0f;
+
+	/** Virtual cursor position on screen (replaces OS cursor for zero-lag) */
+	FVector2D VirtualCursorPos = FVector2D::ZeroVector;
+
+	/** Whether free-look (RMB) is currently active */
+	bool bFreeLookActive = false;
+
+	/** Current free-look rotation offset from default camera orientation */
+	FRotator FreeLookRotation = FRotator::ZeroRotator;
+
 	// ==================== Input Handlers ====================
 
 	void OnPitchDown(const FInputActionValue& Value);
@@ -256,12 +358,24 @@ private:
 	void OnDropBomb(const FInputActionValue& Value);
 	void OnFireRocket(const FInputActionValue& Value);
 	void OnFireRocketReleased(const FInputActionValue& Value);
+	void OnFreeLookPressed(const FInputActionValue& Value);
+	void OnFreeLookReleased(const FInputActionValue& Value);
+	void OnVolumeUp(const FInputActionValue& Value);
+	void OnVolumeDown(const FInputActionValue& Value);
+	void OnSensitivityUp(const FInputActionValue& Value);
+	void OnSensitivityDown(const FInputActionValue& Value);
 
 	// ==================== Core Logic ====================
 
 	void UpdateFlight(float DeltaTime);
+	void UpdateVirtualCursor(float DeltaTime);
+	void UpdateFreeLook(float DeltaTime);
 	void UpdateMouseAim();
 	void UpdateBombImpactPrediction();
 	void DropBomb();
 	void FireRocket();
+	void BindEnemyDestroyedEvents();
+
+	UFUNCTION()
+	void OnEnemyDestroyed(AActor* DestroyedActor);
 };

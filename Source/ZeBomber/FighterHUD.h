@@ -63,10 +63,45 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|RocketCrosshair")
 	float RocketCenterDotRadius = 2.0f;
 
+	// ==================== HUD Text ====================
+
+	/** Color for settings text (top-left) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Text")
+	FLinearColor SettingsTextColor = FLinearColor(0.8f, 0.8f, 0.8f, 0.85f);
+
+	/** Color for score text (top-right) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Text")
+	FLinearColor ScoreTextColor = FLinearColor(0.2f, 1.0f, 0.4f, 0.9f);
+
+	/** Color for altitude text */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Text")
+	FLinearColor AltitudeTextColor = FLinearColor(0.4f, 0.8f, 1.0f, 0.9f);
+
+	/** Text scale for HUD info */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Text", meta = (ClampMin = "0.5"))
+	float TextScale = 1.2f;
+
+	/** Margin from screen edges (pixels) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Text", meta = (ClampMin = "0.0"))
+	float ScreenMargin = 20.0f;
+
+	/** Line spacing between text rows (pixels) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Text", meta = (ClampMin = "0.0"))
+	float LineSpacing = 24.0f;
+
 private:
 	/** Draw a circle on the HUD canvas */
 	void DrawCircle(float CenterX, float CenterY, float Radius, int32 Segments, FLinearColor Color, float Thickness);
 
 	/** Draw a + shaped crosshair with a center gap */
 	void DrawCrosshairPlus(float CenterX, float CenterY, float Size, float Gap, FLinearColor Color, float Thickness);
+
+	/** Draw settings info on top-left */
+	void DrawSettingsInfo(class AFighterPawn* Fighter);
+
+	/** Draw score and altitude on top-right */
+	void DrawScoreInfo(class AFighterPawn* Fighter);
+
+	/** Cached HUD font */
+	UFont* HUDFont = nullptr;
 };

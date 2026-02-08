@@ -13,14 +13,12 @@ void AFighterPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Hide OS cursor - FighterHUD draws custom crosshairs
+	// Hide OS cursor completely - FighterPawn tracks a virtual cursor with zero lag
 	bShowMouseCursor = false;
 
-	// GameAndUI mode: mouse position is tracked (for aiming) but OS cursor is hidden
-	FInputModeGameAndUI InputMode;
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
-	InputMode.SetHideCursorDuringCapture(true);
+	// Game-only mode: raw mouse delta goes directly to input, no Slate processing
+	FInputModeGameOnly InputMode;
 	SetInputMode(InputMode);
 
-	UE_LOG(LogTemp, Warning, TEXT("FighterPlayerController: BeginPlay - Mouse hidden, HUD crosshair active"));
+	UE_LOG(LogTemp, Warning, TEXT("FighterPlayerController: BeginPlay - Game-only input, virtual cursor active"));
 }
