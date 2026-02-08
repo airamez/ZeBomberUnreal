@@ -132,6 +132,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FreeLook", meta = (ClampMin = "0.1"))
 	float AimSensitivity = 2.5f;
 
+	/** Free-look sensitivity multiplier (scales base AimSensitivity for free-look camera rotation) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FreeLook", meta = (ClampMin = "0.1"))
+	float FreeLookSensitivityMultiplier = 3.0f;
+
 	// ==================== Flight Parameters ====================
 
 	/** Current forward speed of the fighter (units/sec) */
