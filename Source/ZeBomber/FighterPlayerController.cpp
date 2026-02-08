@@ -4,23 +4,23 @@
 
 AFighterPlayerController::AFighterPlayerController()
 {
-	bShowMouseCursor = true;
+	bShowMouseCursor = false;
 	bEnableClickEvents = false;
 	bEnableMouseOverEvents = false;
-	DefaultMouseCursor = EMouseCursor::Crosshairs;
 }
 
 void AFighterPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Show cursor and confine to viewport for precise aiming
-	bShowMouseCursor = true;
+	// Hide OS cursor - FighterHUD draws custom crosshairs
+	bShowMouseCursor = false;
 
+	// GameAndUI mode: mouse position is tracked (for aiming) but OS cursor is hidden
 	FInputModeGameAndUI InputMode;
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
-	InputMode.SetHideCursorDuringCapture(false);
+	InputMode.SetHideCursorDuringCapture(true);
 	SetInputMode(InputMode);
 
-	UE_LOG(LogTemp, Warning, TEXT("FighterPlayerController: BeginPlay - Mouse configured for aiming"));
+	UE_LOG(LogTemp, Warning, TEXT("FighterPlayerController: BeginPlay - Mouse hidden, HUD crosshair active"));
 }

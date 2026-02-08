@@ -70,14 +70,12 @@ void AFighterPawn::BeginPlay()
 		}
 	}
 
-	// Show mouse cursor for aiming
+	// Hide OS mouse cursor - the FighterHUD draws custom crosshairs
 	if (APlayerController* PC = Cast<APlayerController>(Controller))
 	{
-		PC->bShowMouseCursor = true;
+		PC->bShowMouseCursor = false;
 		PC->bEnableClickEvents = false;
 		PC->bEnableMouseOverEvents = false;
-		PC->CurrentMouseCursor = EMouseCursor::Crosshairs;
-		PC->DefaultMouseCursor = EMouseCursor::Crosshairs;
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Initialized at altitude %.0f, speed %.0f"), StartAltitude, CurrentSpeed);
@@ -229,18 +227,12 @@ void AFighterPawn::UpdateFlight(float DeltaTime)
 	SmoothedYawInput = FMath::Lerp(SmoothedYawInput, YawInput, 1.0f - YawInertia);
 
 	// --- Pitch (with inertia) ---
+	// Airplane holds its current pitch when no input is pressed.
+	// Only changes when the player actively presses W (tip down) or S (tip up).
 	if (FMath::Abs(SmoothedPitchInput) > 0.01f)
 	{
 		float PitchDelta = SmoothedPitchInput * PitchRate * DeltaTime;
 		CurrentRotation.Pitch = FMath::Clamp(CurrentRotation.Pitch + PitchDelta, -MaxPitchAngle, MaxPitchAngle);
-	}
-	else
-	{
-		// Auto-level pitch when no input
-		if (FMath::Abs(CurrentRotation.Pitch) > 0.5f)
-		{
-			CurrentRotation.Pitch = FMath::FInterpTo(CurrentRotation.Pitch, 0.0f, DeltaTime, LevelingSpeed);
-		}
 	}
 
 	// --- Yaw (turning with inertia) ---
@@ -428,6 +420,12 @@ void AFighterPawn::DropBomb()
 
 			FVector BomberVelocity = GetActorForwardVector() * (CurrentSpeed + BombDropSpeed);
 			BombPrimitive->SetPhysicsLinearVelocity(BomberVelocity);
+		}
+
+		// Play bomb release sound
+		if (BombDropSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, BombDropSound, SpawnLocation);
 		}
 
 		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Bomb dropped at %s with speed %.0f"), *SpawnLocation.ToString(), CurrentSpeed);

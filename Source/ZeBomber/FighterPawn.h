@@ -10,6 +10,7 @@
 class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
+class USoundBase;
 
 /**
  * First-person fighter pawn. The camera sits at the nose of an invisible airplane.
@@ -172,6 +173,10 @@ protected:
 	 *  Should match the physics gravity magnitude in Project Settings. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bombing", meta = (ClampMin = "1.0"))
 	float BombGravity = 980.0f;
+
+	/** Sound to play when a bomb is released */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bombing")
+	USoundBase* BombDropSound;
 
 	// ==================== Enhanced Input ====================
 
