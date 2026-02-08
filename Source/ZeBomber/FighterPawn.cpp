@@ -34,6 +34,11 @@ AFighterPawn::AFighterPawn()
 	NoseCamera->bUsePawnControlRotation = false;
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
+
+	// Create FreeLookAction in constructor so it's available for SetupPlayerInputComponent
+	// (SetupPlayerInputComponent runs BEFORE BeginPlay)
+	FreeLookAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_FreeLook_Auto"));
+	FreeLookAction->ValueType = EInputActionValueType::Boolean;
 }
 
 void AFighterPawn::BeginPlay()
@@ -71,7 +76,12 @@ void AFighterPawn::BeginPlay()
 		VirtualCursorPos = FVector2D(SizeX * 0.5f, SizeY * 0.5f);
 	}
 
-	// Add input mapping context
+	// Create a mapping context for free-look RMB (always works, no Blueprint needed)
+	UInputMappingContext* FreeLookMappingContext = NewObject<UInputMappingContext>(this, TEXT("IMC_FreeLook_Auto"));
+	FreeLookMappingContext->MapKey(FreeLookAction, EKeys::RightMouseButton);
+	UE_LOG(LogTemp, Warning, TEXT("FighterPawn: Created FreeLook mapping context with RMB"));
+
+	// Add input mapping contexts
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -85,6 +95,10 @@ void AFighterPawn::BeginPlay()
 			{
 				UE_LOG(LogTemp, Error, TEXT("FighterPawn: FighterMappingContext is NULL!"));
 			}
+
+			// Add the free-look mapping context at higher priority
+			Subsystem->AddMappingContext(FreeLookMappingContext, 1);
+			UE_LOG(LogTemp, Warning, TEXT("FighterPawn: FreeLook mapping context added"));
 		}
 	}
 
@@ -127,9 +141,6 @@ void AFighterPawn::Tick(float DeltaTime)
 	if (PC)
 	{
 		PC->GetInputMouseDelta(FrameMouseDeltaX, FrameMouseDeltaY);
-
-		// Detect RMB via Slate application (reads raw OS mouse state, always works)
-		bFreeLookActive = FSlateApplication::IsInitialized() && FSlateApplication::Get().GetPressedMouseButtons().Contains(EKeys::RightMouseButton);
 	}
 	else
 	{
@@ -138,16 +149,15 @@ void AFighterPawn::Tick(float DeltaTime)
 		bFreeLookActive = false;
 	}
 
-	// Radar zoom via mouse scroll wheel (read via Slate)
-	if (FSlateApplication::IsInitialized())
+	// Radar zoom via mouse scroll wheel
+	if (PC)
 	{
-		// Check for [ and ] keys for radar zoom (scroll wheel is consumed by viewport)
-		if (PC && PC->WasInputKeyJustPressed(EKeys::MouseScrollUp))
+		if (PC->WasInputKeyJustPressed(EKeys::MouseScrollUp))
 		{
 			RadarZoom = FMath::Clamp(RadarZoom - RadarZoomStep, RadarZoomMin, RadarZoomMax);
 			UE_LOG(LogTemp, Log, TEXT("FighterPawn: Radar Zoom IN -> %.2f"), RadarZoom);
 		}
-		else if (PC && PC->WasInputKeyJustPressed(EKeys::MouseScrollDown))
+		else if (PC->WasInputKeyJustPressed(EKeys::MouseScrollDown))
 		{
 			RadarZoom = FMath::Clamp(RadarZoom + RadarZoomStep, RadarZoomMin, RadarZoomMax);
 			UE_LOG(LogTemp, Log, TEXT("FighterPawn: Radar Zoom OUT -> %.2f"), RadarZoom);
