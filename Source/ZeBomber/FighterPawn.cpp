@@ -11,6 +11,9 @@
 #include "InputMappingContext.h"
 #include "InputAction.h"
 #include "Kismet/GameplayStatics.h"
+#include "InputCoreTypes.h"
+#include "GameFramework/PlayerInput.h"
+#include "Framework/Application/SlateApplication.h"
 #include "EngineUtils.h"
 
 AFighterPawn::AFighterPawn()
@@ -124,11 +127,31 @@ void AFighterPawn::Tick(float DeltaTime)
 	if (PC)
 	{
 		PC->GetInputMouseDelta(FrameMouseDeltaX, FrameMouseDeltaY);
+
+		// Detect RMB via Slate application (reads raw OS mouse state, always works)
+		bFreeLookActive = FSlateApplication::IsInitialized() && FSlateApplication::Get().GetPressedMouseButtons().Contains(EKeys::RightMouseButton);
 	}
 	else
 	{
 		FrameMouseDeltaX = 0.0f;
 		FrameMouseDeltaY = 0.0f;
+		bFreeLookActive = false;
+	}
+
+	// Radar zoom via mouse scroll wheel (read via Slate)
+	if (FSlateApplication::IsInitialized())
+	{
+		// Check for [ and ] keys for radar zoom (scroll wheel is consumed by viewport)
+		if (PC && PC->WasInputKeyJustPressed(EKeys::MouseScrollUp))
+		{
+			RadarZoom = FMath::Clamp(RadarZoom - RadarZoomStep, RadarZoomMin, RadarZoomMax);
+			UE_LOG(LogTemp, Log, TEXT("FighterPawn: Radar Zoom IN -> %.2f"), RadarZoom);
+		}
+		else if (PC && PC->WasInputKeyJustPressed(EKeys::MouseScrollDown))
+		{
+			RadarZoom = FMath::Clamp(RadarZoom + RadarZoomStep, RadarZoomMin, RadarZoomMax);
+			UE_LOG(LogTemp, Log, TEXT("FighterPawn: Radar Zoom OUT -> %.2f"), RadarZoom);
+		}
 	}
 
 	UpdateFlight(DeltaTime);

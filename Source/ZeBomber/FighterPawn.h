@@ -74,6 +74,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	float GetAimSensitivity() const { return AimSensitivity; }
 
+	/** Returns current radar zoom level (multiplier applied to radar world range) */
+	UFUNCTION(BlueprintCallable, Category = "Settings")
+	float GetRadarZoom() const { return RadarZoom; }
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -325,6 +329,12 @@ private:
 	float SensitivityStep = 0.1f;
 	float MinSensitivity = 0.1f;
 	float MaxSensitivity = 5.0f;
+
+	/** Radar zoom level (1.0 = default, lower = zoomed in, higher = zoomed out) */
+	float RadarZoom = 1.0f;
+	float RadarZoomStep = 0.15f;
+	float RadarZoomMin = 0.2f;
+	float RadarZoomMax = 3.0f;
 
 	/** Timer for periodic enemy scanning */
 	float EnemyScanTimer = 0.0f;

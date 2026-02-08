@@ -65,11 +65,11 @@ protected:
 
 	// ==================== HUD Text ====================
 
-	/** Color for settings text (top-left) */
+	/** Color for settings text (bottom-right) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Text")
 	FLinearColor SettingsTextColor = FLinearColor(0.8f, 0.8f, 0.8f, 0.85f);
 
-	/** Color for score text (top-right) */
+	/** Color for score text (top-left) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Text")
 	FLinearColor ScoreTextColor = FLinearColor(0.2f, 1.0f, 0.4f, 0.9f);
 
@@ -89,6 +89,48 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Text", meta = (ClampMin = "0.0"))
 	float LineSpacing = 24.0f;
 
+	// ==================== Radar ====================
+
+	/** Radar display radius on screen (pixels) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Radar", meta = (ClampMin = "30.0"))
+	float RadarRadius = 90.0f;
+
+	/** World range the radar covers (units) — enemies beyond this won't show */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Radar", meta = (ClampMin = "500.0"))
+	float RadarWorldRange = 15000.0f;
+
+	/** Radar background color */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Radar")
+	FLinearColor RadarBgColor = FLinearColor(0.0f, 0.05f, 0.1f, 0.6f);
+
+	/** Radar ring/border color */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Radar")
+	FLinearColor RadarRingColor = FLinearColor(0.0f, 0.8f, 1.0f, 0.5f);
+
+	/** Tank dot color (red) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Radar")
+	FLinearColor RadarTankColor = FLinearColor(1.0f, 0.15f, 0.15f, 1.0f);
+
+	/** Heli dot color (yellow) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Radar")
+	FLinearColor RadarHeliColor = FLinearColor(1.0f, 0.9f, 0.1f, 1.0f);
+
+	/** Dot size for enemies on radar (pixels) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Radar", meta = (ClampMin = "1.0"))
+	float RadarDotSize = 4.0f;
+
+	/** Height bar width for helis (pixels) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Radar", meta = (ClampMin = "1.0"))
+	float RadarHeliBarWidth = 2.0f;
+
+	/** Max height bar length (pixels) for max heli altitude */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Radar", meta = (ClampMin = "2.0"))
+	float RadarHeliBarMaxLength = 20.0f;
+
+	/** Max heli altitude for bar scaling (units) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|Radar", meta = (ClampMin = "100.0"))
+	float RadarHeliMaxAltitude = 1000.0f;
+
 private:
 	/** Draw a circle on the HUD canvas */
 	void DrawCircle(float CenterX, float CenterY, float Radius, int32 Segments, FLinearColor Color, float Thickness);
@@ -96,11 +138,17 @@ private:
 	/** Draw a + shaped crosshair with a center gap */
 	void DrawCrosshairPlus(float CenterX, float CenterY, float Size, float Gap, FLinearColor Color, float Thickness);
 
-	/** Draw settings info on top-left */
+	/** Draw settings info (bottom-right) */
 	void DrawSettingsInfo(class AFighterPawn* Fighter);
 
-	/** Draw score and altitude on top-right */
+	/** Draw score and altitude (top-left) */
 	void DrawScoreInfo(class AFighterPawn* Fighter);
+
+	/** Draw radar display (top-right) */
+	void DrawRadar(class AFighterPawn* Fighter);
+
+	/** Draw a filled circle on the HUD canvas */
+	void DrawFilledCircle(float CenterX, float CenterY, float Radius, int32 Segments, FLinearColor Color);
 
 	/** Cached HUD font */
 	UFont* HUDFont = nullptr;
