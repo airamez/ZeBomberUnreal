@@ -38,6 +38,18 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rocket")
 	class UStaticMeshComponent* RocketMesh;
 
+	/** Particle system component for rocket trail */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rocket")
+	class UParticleSystemComponent* TrailComponent;
+
+	/** Particle system for the rocket trail effect (Cascade) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket")
+	class UParticleSystem* TrailEffect;
+
+	/** Niagara system for the rocket trail effect */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket")
+	class UNiagaraSystem* TrailNiagaraEffect;
+
 	/** Rocket speed (units/sec) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket", meta = (ClampMin = "0.0"))
 	float RocketSpeed = 8000.0f;

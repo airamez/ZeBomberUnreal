@@ -5,6 +5,10 @@
 #include "HeliAI.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
@@ -28,6 +32,10 @@ ARocketProjectile::ARocketProjectile()
 	RocketMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RocketMesh"));
 	RocketMesh->SetupAttachment(RootComponent);
 	RocketMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// Create particle system component for trail
+	TrailComponent = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("TrailComponent"));
+	TrailComponent->SetupAttachment(RootComponent);
 
 	// Projectile movement - handles flight with no gravity
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
@@ -72,6 +80,28 @@ void ARocketProjectile::BeginPlay()
 	if (RocketMesh)
 	{
 		RocketMesh->SetRelativeRotation(MeshRotationOffset);
+	}
+
+	// Set up trail - try Niagara first, then Cascade
+	if (TrailNiagaraEffect)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("RocketProjectile: TrailNiagaraEffect assigned: %s"), *TrailNiagaraEffect->GetName());
+		UNiagaraFunctionLibrary::SpawnSystemAttached(TrailNiagaraEffect, RootComponent, NAME_None, FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, true);
+		UE_LOG(LogTemp, Warning, TEXT("RocketProjectile: Niagara trail activated"));
+	}
+	else if (TrailEffect)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("RocketProjectile: TrailEffect assigned: %s"), *TrailEffect->GetName());
+		if (TrailComponent)
+		{
+			TrailComponent->SetTemplate(TrailEffect);
+			TrailComponent->ActivateSystem();
+			UE_LOG(LogTemp, Warning, TEXT("RocketProjectile: Cascade trail activated"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("RocketProjectile: No trail effect assigned"));
 	}
 
 	// Play fire sound when rocket spawns
