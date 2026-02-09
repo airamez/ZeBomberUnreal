@@ -6,8 +6,6 @@
 #include "HeliAI.h"
 #include "Engine/Canvas.h"
 #include "Engine/Font.h"
-#include "Engine/FontFace.h"
-#include "Fonts/CompositeFont.h"
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
 
@@ -18,38 +16,13 @@ AFighterHUD::AFighterHUD()
 	if (FontObj.Succeeded())
 	{
 		HUDFont = FontObj.Object;
+		InstructionsFont = FontObj.Object;
 	}
-
-	// InstructionsFont will be created in BeginPlay (NewObject not safe in CDO constructor)
-	InstructionsFont = nullptr;
 }
 
 void AFighterHUD::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// Create a monospace font for instructions at runtime
-	// DroidSansMono.ttf ships with UE Slate resources
-	FString MonoFontPath = FPaths::EngineContentDir() / TEXT("Slate/Fonts/DroidSansMono.ttf");
-	if (FPaths::FileExists(MonoFontPath))
-	{
-		InstructionsFont = NewObject<UFont>(this, TEXT("InstructionsFont"));
-		InstructionsFont->FontCacheType = EFontCacheType::Runtime;
-		FCompositeFont* CompositeFont = const_cast<FCompositeFont*>(InstructionsFont->GetCompositeFont());
-		if (CompositeFont)
-		{
-			CompositeFont->DefaultTypeface.Fonts.Empty();
-			FTypefaceEntry& Entry = CompositeFont->DefaultTypeface.Fonts.AddDefaulted_GetRef();
-			Entry.Name = TEXT("Default");
-			Entry.Font = FFontData(MonoFontPath, EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
-		}
-		UE_LOG(LogTemp, Warning, TEXT("FighterHUD: Created monospace font from DroidSansMono.ttf"));
-	}
-	else
-	{
-		InstructionsFont = HUDFont;
-		UE_LOG(LogTemp, Warning, TEXT("FighterHUD: DroidSansMono.ttf not found, using Roboto fallback"));
-	}
 }
 
 void AFighterHUD::DrawHUD()
@@ -117,10 +90,7 @@ void AFighterHUD::DrawHUD()
 	}
 
 	// ==================== Jet HUD Overlay ====================
-	if (Fighter->IsJetHUDEnabled())
-	{
-		DrawJetHUD(Fighter);
-	}
+	DrawJetHUD(Fighter);
 
 	// ==================== Speed & Altitude (center) ====================
 	DrawSpeedAltitude(Fighter);
@@ -188,62 +158,46 @@ void AFighterHUD::DrawSettingsInfo(AFighterPawn* Fighter)
 	float CanvasWidth = Canvas->SizeX;
 	float CanvasHeight = Canvas->SizeY;
 
-	// Position at bottom-right
-	float PanelWidth = 300.0f;
-	float PanelHeight = LineSpacing * 5.0f + 16.0f;
-	float X = CanvasWidth - ScreenMargin - PanelWidth;
-	float Y = CanvasHeight - ScreenMargin - PanelHeight;
-
-	// Draw semi-transparent background panel
-	FLinearColor PanelColor(0.0f, 0.0f, 0.0f, 0.7f);
-	Canvas->K2_DrawBox(FVector2D(X - 4.0f, Y - 4.0f), FVector2D(PanelWidth + 8.0f, PanelHeight + 8.0f), 1.0f, PanelColor);
-
-	// Sound Volume
+	// Build text strings first so we can measure them
 	int32 VolPercent = FMath::RoundToInt(Fighter->GetSoundVolume() * 100.0f);
-	FString VolText = FString::Printf(TEXT("Sound Volume: %d%%  [-/+]"), VolPercent);
-	FCanvasTextItem VolItem(FVector2D(X, Y), FText::FromString(VolText), HUDFont, SettingsTextColor);
+	FString VolText = FString::Printf(TEXT("Volume: %d%%"), VolPercent);
+	FString SensText = FString::Printf(TEXT("Sensitivity: %.1f"), Fighter->GetAimSensitivity());
+
+	// Measure text to auto-size the panel
+	float VolWidth = HUDFont->GetStringSize(*VolText) * TextScale;
+	float SensWidth = HUDFont->GetStringSize(*SensText) * TextScale;
+	float MaxTextWidth = FMath::Max(VolWidth, SensWidth);
+
+	// Position at lower-right corner, tight fit
+	float Padding = 6.0f;
+	float PanelWidth = MaxTextWidth + Padding * 2.0f;
+	float PanelHeight = LineSpacing * 2.0f + Padding * 2.0f;
+	float Margin = 8.0f;
+	float X = CanvasWidth - Margin - PanelWidth;
+	float Y = CanvasHeight - Margin - PanelHeight;
+
+	// Draw tight background panel
+	FLinearColor PanelColor(0.0f, 0.0f, 0.0f, 0.5f);
+	Canvas->K2_DrawBox(FVector2D(X, Y), FVector2D(PanelWidth, PanelHeight), 1.0f, PanelColor);
+
+	float RightEdge = X + PanelWidth - Padding;
+	float TextY = Y + Padding;
+
+	// Sound Volume (right-aligned)
+	FCanvasTextItem VolItem(FVector2D(RightEdge - VolWidth, TextY), FText::FromString(VolText), HUDFont, SettingsTextColor);
 	VolItem.Scale = FVector2D(TextScale, TextScale);
 	VolItem.bOutlined = true;
 	VolItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
 	Canvas->DrawItem(VolItem);
 
-	Y += LineSpacing;
+	TextY += LineSpacing;
 
-	// Mouse Sensitivity
-	FString SensText = FString::Printf(TEXT("Mouse Sensitivity: %.1f  [</>]"), Fighter->GetAimSensitivity());
-	FCanvasTextItem SensItem(FVector2D(X, Y), FText::FromString(SensText), HUDFont, SettingsTextColor);
+	// Mouse Sensitivity (right-aligned)
+	FCanvasTextItem SensItem(FVector2D(RightEdge - SensWidth, TextY), FText::FromString(SensText), HUDFont, SettingsTextColor);
 	SensItem.Scale = FVector2D(TextScale, TextScale);
 	SensItem.bOutlined = true;
 	SensItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
 	Canvas->DrawItem(SensItem);
-
-	Y += LineSpacing;
-
-	// Jet HUD Toggle
-	FString HudText = FString::Printf(TEXT("Jet HUD: %s  [/]"), Fighter->IsJetHUDEnabled() ? TEXT("ON") : TEXT("OFF"));
-	FCanvasTextItem HudItem(FVector2D(X, Y), FText::FromString(HudText), HUDFont, SettingsTextColor);
-	HudItem.Scale = FVector2D(TextScale, TextScale);
-	HudItem.bOutlined = true;
-	HudItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
-	Canvas->DrawItem(HudItem);
-
-	Y += LineSpacing;
-
-	// Right Mouse hint
-	FCanvasTextItem RMBItem(FVector2D(X, Y), FText::FromString(TEXT("Right Mouse: Look around")), HUDFont, SettingsTextColor);
-	RMBItem.Scale = FVector2D(TextScale, TextScale);
-	RMBItem.bOutlined = true;
-	RMBItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
-	Canvas->DrawItem(RMBItem);
-
-	Y += LineSpacing;
-
-	// Mouse Scroll hint
-	FCanvasTextItem ScrollItem(FVector2D(X, Y), FText::FromString(TEXT("Mouse Scroll: Zoom radar")), HUDFont, SettingsTextColor);
-	ScrollItem.Scale = FVector2D(TextScale, TextScale);
-	ScrollItem.bOutlined = true;
-	ScrollItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
-	Canvas->DrawItem(ScrollItem);
 }
 
 void AFighterHUD::DrawScoreInfo(AFighterPawn* Fighter)

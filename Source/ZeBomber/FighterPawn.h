@@ -132,9 +132,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	float GetRadarZoom() const { return RadarZoom; }
 
-	/** Returns whether the jet HUD overlay is enabled */
-	UFUNCTION(BlueprintCallable, Category = "Settings")
-	bool IsJetHUDEnabled() const { return bJetHUDEnabled; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -364,9 +361,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* FreeLookAction;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* ToggleJetHUDAction;
-
 	UInputAction* PauseAction;
 	UInputAction* ContinueAction;
 	UInputAction* QuitAction;
@@ -464,15 +458,15 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Game")
 	FString InstructionsText =
 		TEXT("INSTRUCTIONS\n")
-		TEXT("  - Control: W S A D       |  - Adjust speed: Mouse wheel\n")
-		TEXT("  - Slide Left/Right: Q E  |  - Look around: Right Mouse\n")
-		TEXT("  - Drop bombs: Space      |  - Fire rockets: Left Mouse\n")
-		TEXT("  - Zoom radar: [ ] keys   |  - Toggle HUD: Toggle jet HUD on/off\n")
-		TEXT("  - Volume: Arrows Up/Down |  - Sensitivity: Arrows Left/Right\n")
-		TEXT("  - Pause game: ESC\n")
-		TEXT("  - Bombs destroy tanks!\n")
-		TEXT("  - Rockets destroy helicopters\n")
-		TEXT("  - If the base HP reaches zero, you lose the game!\n");
+		TEXT("  | Control: W S A D || Adjust speed: Mouse wheel\n")
+		TEXT("  | Slide Left/Right: Q E || Look around: Right Mouse\n")
+		TEXT("  | Drop bombs: Space || Fire rockets: Left Mouse\n")
+		TEXT("  | Zoom radar: [ ] keys\n")
+		TEXT("  | Volume: Arrows Up/Down || Sensitivity: Arrows Left/Right\n")
+		TEXT("  | Pause game: ESC\n")
+		TEXT("  | Bombs destroy tanks!\n")
+		TEXT("  | Rockets destroy helicopters\n")
+		TEXT("  | If the base HP reaches zero, you lose the game!\n");
 	/** Sound volume (0.0 - 1.0) */
 	float SoundVolume = 0.5f;
 
@@ -482,8 +476,6 @@ private:
 	float MinSensitivity = 0.1f;
 	float MaxSensitivity = 5.0f;
 
-	/** Whether the jet HUD overlay is shown */
-	bool bJetHUDEnabled = true;
 
 	/** Radar zoom level (1.0 = default, lower = zoomed in, higher = zoomed out) */
 	float RadarZoom = 1.0f;

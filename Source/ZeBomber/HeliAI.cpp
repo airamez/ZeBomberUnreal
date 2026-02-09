@@ -27,6 +27,12 @@ void AHeliAI::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Ensure root component is Movable (Blueprint may have overridden the C++ default)
+	if (SceneRoot && SceneRoot->Mobility != EComponentMobility::Movable)
+	{
+		SceneRoot->SetMobility(EComponentMobility::Movable);
+	}
+
 	// Store initial spawn location
 	InitialSpawnLocation = GetActorLocation();
 

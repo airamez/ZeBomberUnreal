@@ -102,19 +102,19 @@ protected:
 
 	/** Line thickness for jet HUD elements */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|JetHUD", meta = (ClampMin = "0.5"))
-	float JetHUDThickness = 1.5f;
+	float JetHUDThickness = 1.0f;
 
 	/** Width of the horizon line (pixels from center) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|JetHUD", meta = (ClampMin = "20.0"))
-	float HorizonLineWidth = 100.0f;
+	float HorizonLineWidth = 70.0f;
 
 	/** Width of pitch ladder lines (pixels) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|JetHUD", meta = (ClampMin = "10.0"))
-	float PitchLadderWidth = 60.0f;
+	float PitchLadderWidth = 40.0f;
 
 	/** Pixels per degree for pitch ladder spacing */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|JetHUD", meta = (ClampMin = "1.0"))
-	float PitchPixelsPerDegree = 4.0f;
+	float PitchPixelsPerDegree = 2.5f;
 
 	/** Pitch ladder step in degrees (a line every N degrees) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD|JetHUD", meta = (ClampMin = "1"))
