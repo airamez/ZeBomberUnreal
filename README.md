@@ -16,6 +16,8 @@ The **FighterPawn** is a first-person cockpit-view pawn. The camera sits at the 
 | **S** | Tip nose up (climb) |
 | **A** | Turn left |
 | **D** | Turn right |
+| **Q** | Slide left (lateral adjustment) |
+| **E** | Slide right (lateral adjustment) |
 | **Mouse** | Aim rocket crosshair (white) |
 | **Left Click** | Fire rockets (hold for auto-fire) |
 | **Right Click (hold)** | Free-look camera (look around while flying) |
@@ -74,6 +76,28 @@ Hold **Right Mouse Button** to look around independently of flight direction. Re
 - **Slower free-look:** Decrease `Free Look Sensitivity Multiplier` (e.g., 1.0 for same as aiming)
 - **Wider look angles:** Increase `Free Look Max Yaw` and `Free Look Max Pitch`
 - **Quicker snap-back:** Increase `Free Look Return Speed`
+
+### Slide Movement (Q/E Keys)
+
+Use **Q** and **E** keys for subtle lateral sliding adjustments while maintaining forward flight. This simulates rudder/aileron trim for precise bomb targeting.
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| **Slide Speed** | Lateral movement speed when holding Q/E (units/sec) | 300 |
+| **Slide Decay Rate** | How quickly slide movement decays when keys released (units/sec²) | 800 |
+
+#### How Slide Movement Works
+- **Q key** slides left relative to aircraft orientation
+- **E key** slides right relative to aircraft orientation  
+- Slide velocity decays smoothly when keys are released
+- Movement combines with normal forward flight
+- Provides fine positioning control without affecting heading
+
+#### Tuning Tips
+- **Faster sliding:** Increase `Slide Speed` (e.g., 500 for quick adjustments)
+- **Slower sliding:** Decrease `Slide Speed` (e.g., 150 for subtle movements)
+- **Quicker stop:** Increase `Slide Decay Rate` (e.g., 1200 for rapid deceleration)
+- **Gentler stop:** Decrease `Slide Decay Rate` (e.g., 400 for smooth coasting)
 
 ### Radar System
 
@@ -149,6 +173,8 @@ Found under the **Flight** category in the Details panel.
 | **Leveling Speed** | How fast the airplane auto-levels at minimum altitude (degrees/sec) | 15 |
 | **Min Altitude** | Floor altitude — airplane cannot fly below this | 500 |
 | **Start Altitude** | Altitude where the airplane spawns at the start of the game | 5000 |
+| **Slide Speed** | Lateral movement speed when holding Q/E (units/sec) | 300 |
+| **Slide Decay Rate** | How quickly slide movement decays when keys released (units/sec²) | 800 |
 
 #### Tuning Tips
 
@@ -156,6 +182,7 @@ Found under the **Flight** category in the Details panel.
 - **Heavy bomber feel:** Decrease `Pitch Rate` and `Yaw Rate`, increase `Pitch Inertia` and `Yaw Inertia` (closer to 0.95).
 - **Limit steep angles:** Lower `Max Pitch Angle` (e.g., 20 degrees prevents extreme dives/climbs).
 - **Faster gameplay:** Increase `Min Speed` and `Default Speed`.
+- **Slide adjustments:** Modify `Slide Speed` for lateral movement rate, `Slide Decay Rate` for how quickly sliding stops.
 
 ### Camera Parameters
 
@@ -219,6 +246,8 @@ Create these in Content Browser → **Input** → **Input Action**:
 - `IA_PitchUp` — S key
 - `IA_TurnLeft` — A key
 - `IA_TurnRight` — D key
+- `IA_SlideLeft` — Q key
+- `IA_SlideRight` — E key
 - `IA_DropBomb` — Space
 - `IA_FireRocket` — Left Mouse Button
 
@@ -226,7 +255,7 @@ Create these in Content Browser → **Input** → **Input Action**:
 
 Create `IMC_Fighter` in Content Browser → **Input** → **Input Mapping Context**, and map each Input Action to its key.
 
-Assign `IMC_Fighter` and all six Input Actions in the **BP_Fighter** Blueprint under the **Input** category.
+Assign `IMC_Fighter` and all eight Input Actions in the **BP_Fighter** Blueprint under the **Input** category.
 
 ---
 

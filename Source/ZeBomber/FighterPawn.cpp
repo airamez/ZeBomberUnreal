@@ -56,6 +56,13 @@ AFighterPawn::AFighterPawn()
 
 	QuitAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_Quit_Auto"));
 	QuitAction->ValueType = EInputActionValueType::Boolean;
+
+	// Create slide input actions (Q/E keys)
+	SlideLeftAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_SlideLeft_Auto"));
+	SlideLeftAction->ValueType = EInputActionValueType::Boolean;
+
+	SlideRightAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_SlideRight_Auto"));
+	SlideRightAction->ValueType = EInputActionValueType::Boolean;
 }
 
 void AFighterPawn::BeginPlay()
@@ -75,6 +82,9 @@ void AFighterPawn::BeginPlay()
 
 	// Initialize speed
 	CurrentSpeed = DefaultSpeed;
+	
+	// Initialize slide velocity
+	SlideVelocity = FVector::ZeroVector;
 
 	// Apply camera offset and pitch to the camera (relative to pivot)
 	if (NoseCamera)
@@ -100,7 +110,9 @@ void AFighterPawn::BeginPlay()
 	FreeLookMappingContext->MapKey(PauseAction, EKeys::Escape);
 	FreeLookMappingContext->MapKey(ContinueAction, EKeys::C);
 	FreeLookMappingContext->MapKey(QuitAction, EKeys::X);
-	UE_LOG(LogTemp, Warning, TEXT("FighterPawn: Created FreeLook mapping context with RMB"));
+	FreeLookMappingContext->MapKey(SlideLeftAction, EKeys::Q);
+	FreeLookMappingContext->MapKey(SlideRightAction, EKeys::E);
+	UE_LOG(LogTemp, Warning, TEXT("FighterPawn: Created FreeLook mapping context with RMB, Q/E slide"));
 
 	// Add input mapping contexts
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
@@ -255,6 +267,18 @@ void AFighterPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 			EIC->BindAction(TurnRightAction, ETriggerEvent::Completed, this, &AFighterPawn::OnTurnRightReleased);
 		}
 
+		// Q = Slide Left
+		if (SlideLeftAction)
+		{
+			EIC->BindAction(SlideLeftAction, ETriggerEvent::Triggered, this, &AFighterPawn::OnSlideLeft);
+		}
+
+		// E = Slide Right
+		if (SlideRightAction)
+		{
+			EIC->BindAction(SlideRightAction, ETriggerEvent::Triggered, this, &AFighterPawn::OnSlideRight);
+		}
+
 		// Space = Drop Bomb
 		if (DropBombAction)
 		{
@@ -361,6 +385,18 @@ void AFighterPawn::OnTurnRight(const FInputActionValue& Value)
 void AFighterPawn::OnTurnRightReleased(const FInputActionValue& Value)
 {
 	YawInput = 0.0f;
+}
+
+void AFighterPawn::OnSlideLeft(const FInputActionValue& Value)
+{
+	// Add left slide velocity (negative Y in local space)
+	SlideVelocity.Y = -SlideSpeed;
+}
+
+void AFighterPawn::OnSlideRight(const FInputActionValue& Value)
+{
+	// Add right slide velocity (positive Y in local space)
+	SlideVelocity.Y = SlideSpeed;
 }
 
 void AFighterPawn::OnDropBomb(const FInputActionValue& Value)
@@ -566,7 +602,29 @@ void AFighterPawn::UpdateFlight(float DeltaTime)
 
 	// --- Movement ---
 	FVector ForwardDirection = GetActorForwardVector();
-	FVector NewLocation = GetActorLocation() + (ForwardDirection * CurrentSpeed * DeltaTime);
+	FVector RightDirection = GetActorRightVector();
+	
+	// Decay slide velocity when not pressing keys
+	if (FMath::Abs(SlideVelocity.Y) > 0.01f)
+	{
+		float DecayAmount = SlideDecayRate * DeltaTime;
+		if (SlideVelocity.Y > 0.0f)
+		{
+			SlideVelocity.Y = FMath::Max(0.0f, SlideVelocity.Y - DecayAmount);
+		}
+		else
+		{
+			SlideVelocity.Y = FMath::Min(0.0f, SlideVelocity.Y + DecayAmount);
+		}
+	}
+	else
+	{
+		SlideVelocity.Y = 0.0f;
+	}
+	
+	// Calculate movement
+	FVector Movement = (ForwardDirection * CurrentSpeed * DeltaTime) + (RightDirection * SlideVelocity.Y * DeltaTime);
+	FVector NewLocation = GetActorLocation() + Movement;
 
 	// Enforce minimum altitude
 	if (NewLocation.Z < MinAltitude)

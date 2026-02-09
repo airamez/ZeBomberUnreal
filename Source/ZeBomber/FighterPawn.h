@@ -248,6 +248,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight", meta = (ClampMin = "0.0"))
 	float LevelingSpeed = 15.0f;
 
+	/** Slide movement speed (units/sec) - lateral movement for Q/E keys */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight", meta = (ClampMin = "0.0"))
+	float SlideSpeed = 300.0f;
+
+	/** Current slide velocity (lateral movement) */
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Flight")
+	FVector SlideVelocity = FVector::ZeroVector;
+
+	/** How quickly slide movement decays when not pressing keys (units/sec^2) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight", meta = (ClampMin = "0.0"))
+	float SlideDecayRate = 800.0f;
+
 	/** Minimum flight altitude */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight")
 	float MinAltitude = 500.0f;
@@ -322,6 +334,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* TurnRightAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* SlideLeftAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* SlideRightAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* DropBombAction;
@@ -479,6 +497,8 @@ private:
 	void OnTurnLeftReleased(const FInputActionValue& Value);
 	void OnTurnRight(const FInputActionValue& Value);
 	void OnTurnRightReleased(const FInputActionValue& Value);
+	void OnSlideLeft(const FInputActionValue& Value);
+	void OnSlideRight(const FInputActionValue& Value);
 	void OnDropBomb(const FInputActionValue& Value);
 	void OnFireRocket(const FInputActionValue& Value);
 	void OnFireRocketReleased(const FInputActionValue& Value);
