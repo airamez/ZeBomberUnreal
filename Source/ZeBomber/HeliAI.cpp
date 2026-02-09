@@ -55,6 +55,7 @@ void AHeliAI::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	// Spawn explosion effect when helicopter is destroyed
 	if (ExplosionComp && EndPlayReason == EEndPlayReason::Destroyed)
 	{
+		UE_LOG(LogTemp, Log, TEXT("HeliAI: Spawning explosion at owner location"));
 		ExplosionComp->SpawnExplosionAtOwner();
 	}
 

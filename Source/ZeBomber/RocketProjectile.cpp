@@ -3,6 +3,7 @@
 #include "RocketProjectile.h"
 #include "TankAI.h"
 #include "HeliAI.h"
+#include "FighterPawn.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Particles/ParticleSystem.h"
@@ -104,7 +105,12 @@ void ARocketProjectile::BeginPlay()
 	// Play fire sound when rocket spawns
 	if (FireSound)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
+		float Volume = 1.0f;
+		if (AFighterPawn* Fighter = Cast<AFighterPawn>(GetOwner()))
+		{
+			Volume = Fighter->GetSoundVolume();
+		}
+		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation(), Volume);
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("RocketProjectile: BeginPlay - Velocity=%s Speed=%.0f"),

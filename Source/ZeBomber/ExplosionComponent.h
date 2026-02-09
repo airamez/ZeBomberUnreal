@@ -47,4 +47,7 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+    
+    /** Get sound volume from player FighterPawn, with fallback to default */
+    float GetSoundVolume() const;
 };

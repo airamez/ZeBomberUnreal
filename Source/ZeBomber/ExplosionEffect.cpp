@@ -189,15 +189,19 @@ void AExplosionEffect::PlayExplosionSound()
 {
     if (!CurrentConfig.ExplosionSound)
     {
+        UE_LOG(LogTemp, Log, TEXT("ExplosionEffect: No explosion sound configured"));
         return;
     }
+
+    UE_LOG(LogTemp, Log, TEXT("ExplosionEffect: Playing explosion sound %s at volume %.2f"), 
+        *CurrentConfig.ExplosionSound->GetName(), CurrentConfig.SoundVolume);
 
     // Use UGameplayStatics for positional sound that attenuates naturally
     UGameplayStatics::PlaySoundAtLocation(
         this,
         CurrentConfig.ExplosionSound,
         GetActorLocation(),
-        CurrentConfig.ExplosionScale, // Volume multiplier based on scale
+        CurrentConfig.SoundVolume, // Use the volume from config instead of scale
         1.0f, // Pitch multiplier
         0.0f); // Start time
 }

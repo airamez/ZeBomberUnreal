@@ -40,6 +40,7 @@ void ATankAI::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	// Spawn explosion effect when tank is destroyed
 	if (ExplosionComp && EndPlayReason == EEndPlayReason::Destroyed)
 	{
+		UE_LOG(LogTemp, Log, TEXT("TankAI: Spawning explosion at owner location"));
 		ExplosionComp->SpawnExplosionAtOwner();
 	}
 

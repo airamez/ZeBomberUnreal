@@ -31,6 +31,10 @@ struct FExplosionConfig
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Explosion")
     USoundBase* ExplosionSound = nullptr;
 
+    /** Volume multiplier for explosion sound (0.0 - 1.0) */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Explosion", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+    float SoundVolume = 1.0f;
+
     /** Optional: Decal to project on the ground (scorch mark) */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Explosion")
     UMaterialInterface* DecalMaterial = nullptr;
@@ -69,6 +73,7 @@ struct FExplosionConfig
         ParticleSystem = nullptr;
         NiagaraSystem = nullptr;
         ExplosionSound = nullptr;
+        SoundVolume = 1.0f;
         DecalMaterial = nullptr;
         ExplosionScale = 1.0f;
         LifeSpan = 5.0f;
