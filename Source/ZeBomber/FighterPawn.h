@@ -216,6 +216,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight", meta = (ClampMin = "0.0"))
 	float SpeedChangeRate = 400.0f;
 
+	/** Speed adjustment step for mouse wheel (units/sec) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight", meta = (ClampMin = "50.0"))
+	float SpeedStep = 100.0f;
+
 	/** Pitch rate (degrees/sec) - how fast the nose goes up/down */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight", meta = (ClampMin = "0.0"))
 	float PitchRate = 12.0f;
@@ -358,6 +362,18 @@ protected:
 	UInputAction* QuitAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* RadarZoomInAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* RadarZoomOutAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* SpeedUpAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* SpeedDownAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* VolumeUpAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -443,7 +459,8 @@ private:
 		TEXT("  - Fire rockets: Left Mouse\n")
 		TEXT("  - Drop bombs: Space\n")
 		TEXT("  - Look around: Right Mouse\n")
-		TEXT("  - Zoom radar: Mouse Scroll\n")
+		TEXT("  - Zoom radar: [ ] keys\n")
+		TEXT("  - Adjust speed: Mouse wheel\n")
 		TEXT("  - Toggle HUD: Toggle jet HUD on/off\n")
 		TEXT("  - Pause game: ESC\n")
 		TEXT("  - Bombs destroy tanks!\n")
@@ -511,6 +528,10 @@ private:
 	void OnPausePressed(const FInputActionValue& Value);
 	void OnContinuePressed(const FInputActionValue& Value);
 	void OnQuitGame(const FInputActionValue& Value);
+	void OnRadarZoomIn(const FInputActionValue& Value);
+	void OnRadarZoomOut(const FInputActionValue& Value);
+	void OnSpeedUp(const FInputActionValue& Value);
+	void OnSpeedDown(const FInputActionValue& Value);
 
 	// ==================== Core Logic ====================
 

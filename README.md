@@ -22,7 +22,9 @@ The **FighterPawn** is a first-person cockpit-view pawn. The camera sits at the 
 | **Left Click** | Fire rockets (hold for auto-fire) |
 | **Right Click (hold)** | Free-look camera (look around while flying) |
 | **Space** | Drop bomb |
-| **Mouse Scroll Up/Down** | Zoom radar in/out |
+| **[** | Radar zoom in |
+| **]** | Radar zoom out |
+| **Mouse Scroll Up/Down** | Adjust fighter speed |
 | **/** | Toggle jet HUD on/off |
 | **ESC** | Pause game (show instructions + quit option) |
 | **X** | Quit game (only when paused) |
@@ -95,6 +97,26 @@ Use **Q** and **E** keys for subtle lateral sliding adjustments while maintainin
 - **Quicker stop:** Increase `Slide Decay Rate` (e.g., 1200 for rapid deceleration)
 - **Gentler stop:** Decrease `Slide Decay Rate` (e.g., 400 for smooth coasting)
 
+### Speed Control (Mouse Wheel)
+
+Use **mouse wheel up/down** to adjust the fighter's default cruising speed. This affects your base speed that can be modified by pitching (diving/climbing).
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| **Speed Step** | How much speed changes per mouse wheel scroll (units/sec) | 100 |
+
+#### How Speed Control Works
+- **Mouse wheel up** increases default cruising speed
+- **Mouse wheel down** decreases default cruising speed  
+- Speed is clamped between `Min Speed` and `Max Speed` limits
+- Pitching (W/S keys) still modifies speed around this new default
+- Changes persist until you adjust again or restart the game
+
+#### Tuning Tips
+- **Faster adjustments:** Increase `Speed Step` (e.g., 200 for quick changes)
+- **Finer control:** Decrease `Speed Step` (e.g., 50 for precise adjustments)
+- **Speed limits:** Adjust `Min Speed` and `Max Speed` in Flight Parameters
+
 ### Radar System
 
 A square radar display in the top-right corner shows enemies within range. The radar rotates with the player's heading so "up" on radar is always forward.
@@ -115,8 +137,8 @@ A square radar display in the top-right corner shows enemies within range. The r
 - **Concentric rings** — Distance markers (66% and 33% of range)
 
 #### Radar Controls
-- **Mouse Scroll Up** — Zoom in (see nearby enemies in more detail)
-- **Mouse Scroll Down** — Zoom out (see farther enemies)
+- **[** — Zoom in (see nearby enemies in more detail)
+- **]** — Zoom out (see farther enemies)
 
 ### Jet HUD (Pitch Ladder)
 
@@ -171,6 +193,7 @@ Found under the **Flight** category in the Details panel.
 | **Start Altitude** | Altitude where the airplane spawns at the start of the game | 5000 |
 | **Slide Speed** | Lateral movement speed when holding Q/E (units/sec) | 300 |
 | **Slide Decay Rate** | How quickly slide movement decays when keys released (units/sec²) | 800 |
+| **Speed Step** | How much speed changes per mouse wheel scroll (units/sec) | 100 |
 
 #### Tuning Tips
 
@@ -179,6 +202,7 @@ Found under the **Flight** category in the Details panel.
 - **Limit steep angles:** Lower `Max Pitch Angle` (e.g., 20 degrees prevents extreme dives/climbs).
 - **Faster gameplay:** Increase `Min Speed` and `Default Speed`.
 - **Slide adjustments:** Modify `Slide Speed` for lateral movement rate, `Slide Decay Rate` for how quickly sliding stops.
+- **Speed control:** Adjust `Speed Step` for mouse wheel sensitivity, `Min Speed`/`Max Speed` for overall speed range.
 
 ### Camera Parameters
 
@@ -244,6 +268,10 @@ Create these in Content Browser → **Input** → **Input Action**:
 - `IA_TurnRight` — D key
 - `IA_SlideLeft` — Q key
 - `IA_SlideRight` — E key
+- `IA_RadarZoomIn` — [ key
+- `IA_RadarZoomOut` — ] key
+- `IA_SpeedUp` — Mouse Wheel Up
+- `IA_SpeedDown` — Mouse Wheel Down
 - `IA_DropBomb` — Space
 - `IA_FireRocket` — Left Mouse Button
 
@@ -251,7 +279,7 @@ Create these in Content Browser → **Input** → **Input Action**:
 
 Create `IMC_Fighter` in Content Browser → **Input** → **Input Mapping Context**, and map each Input Action to its key.
 
-Assign `IMC_Fighter` and all eight Input Actions in the **BP_Fighter** Blueprint under the **Input** category.
+Assign `IMC_Fighter` and all twelve Input Actions in the **BP_Fighter** Blueprint under the **Input** category.
 
 ---
 

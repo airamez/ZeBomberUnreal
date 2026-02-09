@@ -63,6 +63,20 @@ AFighterPawn::AFighterPawn()
 
 	SlideRightAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_SlideRight_Auto"));
 	SlideRightAction->ValueType = EInputActionValueType::Boolean;
+
+	// Create radar zoom input actions ([ ] keys)
+	RadarZoomInAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_RadarZoomIn_Auto"));
+	RadarZoomInAction->ValueType = EInputActionValueType::Boolean;
+
+	RadarZoomOutAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_RadarZoomOut_Auto"));
+	RadarZoomOutAction->ValueType = EInputActionValueType::Boolean;
+
+	// Create speed control input actions (mouse wheel)
+	SpeedUpAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_SpeedUp_Auto"));
+	SpeedUpAction->ValueType = EInputActionValueType::Boolean;
+
+	SpeedDownAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_SpeedDown_Auto"));
+	SpeedDownAction->ValueType = EInputActionValueType::Boolean;
 }
 
 void AFighterPawn::BeginPlay()
@@ -112,7 +126,11 @@ void AFighterPawn::BeginPlay()
 	FreeLookMappingContext->MapKey(QuitAction, EKeys::X);
 	FreeLookMappingContext->MapKey(SlideLeftAction, EKeys::Q);
 	FreeLookMappingContext->MapKey(SlideRightAction, EKeys::E);
-	UE_LOG(LogTemp, Warning, TEXT("FighterPawn: Created FreeLook mapping context with RMB, Q/E slide"));
+	FreeLookMappingContext->MapKey(RadarZoomInAction, EKeys::LeftBracket);
+	FreeLookMappingContext->MapKey(RadarZoomOutAction, EKeys::RightBracket);
+	FreeLookMappingContext->MapKey(SpeedUpAction, EKeys::MouseScrollUp);
+	FreeLookMappingContext->MapKey(SpeedDownAction, EKeys::MouseScrollDown);
+	UE_LOG(LogTemp, Warning, TEXT("FighterPawn: Created FreeLook mapping context with RMB, Q/E slide, [ ] zoom, mouse wheel speed"));
 
 	// Add input mapping contexts
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
@@ -183,21 +201,6 @@ void AFighterPawn::Tick(float DeltaTime)
 		FrameMouseDeltaX = 0.0f;
 		FrameMouseDeltaY = 0.0f;
 		bFreeLookActive = false;
-	}
-
-	// Radar zoom via mouse scroll wheel
-	if (PC)
-	{
-		if (PC->WasInputKeyJustPressed(EKeys::MouseScrollUp))
-		{
-			RadarZoom = FMath::Clamp(RadarZoom - RadarZoomStep, RadarZoomMin, RadarZoomMax);
-			UE_LOG(LogTemp, Log, TEXT("FighterPawn: Radar Zoom IN -> %.2f"), RadarZoom);
-		}
-		else if (PC->WasInputKeyJustPressed(EKeys::MouseScrollDown))
-		{
-			RadarZoom = FMath::Clamp(RadarZoom + RadarZoomStep, RadarZoomMin, RadarZoomMax);
-			UE_LOG(LogTemp, Log, TEXT("FighterPawn: Radar Zoom OUT -> %.2f"), RadarZoom);
-		}
 	}
 
 	// Decay damage flash
@@ -277,6 +280,30 @@ void AFighterPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		if (SlideRightAction)
 		{
 			EIC->BindAction(SlideRightAction, ETriggerEvent::Triggered, this, &AFighterPawn::OnSlideRight);
+		}
+
+		// [ = Radar Zoom In
+		if (RadarZoomInAction)
+		{
+			EIC->BindAction(RadarZoomInAction, ETriggerEvent::Triggered, this, &AFighterPawn::OnRadarZoomIn);
+		}
+
+		// ] = Radar Zoom Out
+		if (RadarZoomOutAction)
+		{
+			EIC->BindAction(RadarZoomOutAction, ETriggerEvent::Triggered, this, &AFighterPawn::OnRadarZoomOut);
+		}
+
+		// Mouse Wheel Up = Speed Up
+		if (SpeedUpAction)
+		{
+			EIC->BindAction(SpeedUpAction, ETriggerEvent::Triggered, this, &AFighterPawn::OnSpeedUp);
+		}
+
+		// Mouse Wheel Down = Speed Down
+		if (SpeedDownAction)
+		{
+			EIC->BindAction(SpeedDownAction, ETriggerEvent::Triggered, this, &AFighterPawn::OnSpeedDown);
 		}
 
 		// Space = Drop Bomb
@@ -397,6 +424,30 @@ void AFighterPawn::OnSlideRight(const FInputActionValue& Value)
 {
 	// Add right slide velocity (positive Y in local space)
 	SlideVelocity.Y = SlideSpeed;
+}
+
+void AFighterPawn::OnRadarZoomIn(const FInputActionValue& Value)
+{
+	RadarZoom = FMath::Clamp(RadarZoom - RadarZoomStep, RadarZoomMin, RadarZoomMax);
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Radar Zoom IN -> %.2f"), RadarZoom);
+}
+
+void AFighterPawn::OnRadarZoomOut(const FInputActionValue& Value)
+{
+	RadarZoom = FMath::Clamp(RadarZoom + RadarZoomStep, RadarZoomMin, RadarZoomMax);
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Radar Zoom OUT -> %.2f"), RadarZoom);
+}
+
+void AFighterPawn::OnSpeedUp(const FInputActionValue& Value)
+{
+	DefaultSpeed = FMath::Clamp(DefaultSpeed + SpeedStep, MinSpeed, MaxSpeed);
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Speed UP -> %.0f"), DefaultSpeed);
+}
+
+void AFighterPawn::OnSpeedDown(const FInputActionValue& Value)
+{
+	DefaultSpeed = FMath::Clamp(DefaultSpeed - SpeedStep, MinSpeed, MaxSpeed);
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Speed DOWN -> %.0f"), DefaultSpeed);
 }
 
 void AFighterPawn::OnDropBomb(const FInputActionValue& Value)
