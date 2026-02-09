@@ -29,7 +29,7 @@ The **FighterPawn** is a first-person cockpit-view pawn. The camera sits at the 
 
 ### Game Flow
 
-1. **Instructions screen** — Game starts showing instructions loaded from `Content/instructions.txt`. Press **Space** to begin.
+1. **Instructions screen** — Game starts showing built-in instructions. Press **Space** to begin.
 2. **Wave gameplay** — Enemies spawn and advance toward the base at (0,0,0). Destroy all enemies to complete the wave.
 3. **Wave end screen** — Shows wave duration, kill stats, and base HP. Press **Space** for the next wave.
 4. **Pause** — Press **ESC** to pause. Shows instructions + "Press X to close the game". Press **ESC** again to resume.
@@ -49,10 +49,6 @@ The **FighterPawn** is a first-person cockpit-view pawn. The camera sits at the 
 - Spawners wait for the FighterPawn to trigger each wave (no auto-spawning).
 - Each wave adds more enemies (configurable per-spawner).
 - Kill counters show **X/Y** format (destroyed/total in current wave).
-
-### Instructions File
-
-Edit `Content/instructions.txt` to change the text shown on the start screen and pause screen. The file is loaded at runtime.
 
 ### Crosshairs
 

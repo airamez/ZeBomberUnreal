@@ -438,18 +438,17 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Game")
 	FString InstructionsText =
 		TEXT("INSTRUCTIONS\n")
-		TEXT("\n")
 		TEXT("  - Control: W S A D\n")
+		TEXT("  - Slide Left/Right: Q E\n")
 		TEXT("  - Fire rockets: Left Mouse\n")
 		TEXT("  - Drop bombs: Space\n")
 		TEXT("  - Look around: Right Mouse\n")
 		TEXT("  - Zoom radar: Mouse Scroll\n")
 		TEXT("  - Toggle HUD: Toggle jet HUD on/off\n")
 		TEXT("  - Pause game: ESC\n")
-		TEXT("\n")
-		TEXT("  - Only bombs destroy tanks!\n")
+		TEXT("  - Bombs destroy tanks!\n")
+		TEXT("  - Rockets destroy helicopters\n")
 		TEXT("  - If the base HP reaches zero, you lose the game!\n");
-
 	/** Sound volume (0.0 - 1.0) */
 	float SoundVolume = 0.5f;
 
