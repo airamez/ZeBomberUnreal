@@ -272,6 +272,16 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight")
 	float StartAltitude = 5000.0f;
 
+	// ==================== Landscape Streaming ====================
+
+	/** Streaming distance multiplier for landscape loading around the fighter */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Landscape", meta = (ClampMin = "1.0"))
+	float LandscapeStreamingDistance = 100000.0f;
+
+	/** Whether to force load all landscape at start (for small maps) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Landscape")
+	bool bLoadAllLandscapeAtStart = true;
+
 	// ==================== Rocket / Mouse Crosshair ====================
 
 	/** Blueprint class for the rocket to fire */
@@ -545,4 +555,12 @@ private:
 
 	UFUNCTION()
 	void OnEnemyDestroyed(AActor* DestroyedActor);
+
+	// ==================== Landscape Streaming ====================
+
+	/** Configure landscape streaming settings for optimal aerial view */
+	void ConfigureLandscapeStreaming();
+
+	/** Update landscape streaming based on fighter position */
+	void UpdateLandscapeStreaming();
 };

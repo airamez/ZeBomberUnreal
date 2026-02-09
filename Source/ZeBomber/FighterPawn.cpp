@@ -18,6 +18,9 @@
 #include "Framework/Application/SlateApplication.h"
 #include "EngineUtils.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Landscape/LandscapeProxy.h"
+#include "WorldPartition/WorldPartition.h"
+#include "Engine/World.h"
 
 AFighterPawn::AFighterPawn()
 {
@@ -116,6 +119,9 @@ void AFighterPawn::BeginPlay()
 		PC->GetViewportSize(SizeX, SizeY);
 		VirtualCursorPos = FVector2D(SizeX * 0.5f, SizeY * 0.5f);
 	}
+
+	// Configure landscape streaming for aerial view
+	ConfigureLandscapeStreaming();
 
 	// Create a mapping context for free-look RMB (always works, no Blueprint needed)
 	UInputMappingContext* FreeLookMappingContext = NewObject<UInputMappingContext>(this, TEXT("IMC_FreeLook_Auto"));
@@ -995,6 +1001,39 @@ void AFighterPawn::OnEnemyDestroyed(AActor* DestroyedActor)
 	else if (DestroyedActor->IsA<AHeliAI>())
 	{
 		AddHeliKill();
-		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Heli destroyed! Wave: %d/%d"), WaveHelisDestroyed, WaveTotalHelis);
+		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Helicopter destroyed! Wave: %d/%d"), WaveHelisDestroyed, WaveTotalHelis);
 	}
+}
+
+// ==================== Landscape Streaming ====================
+
+void AFighterPawn::ConfigureLandscapeStreaming()
+{
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Configuring landscape streaming"));
+	
+	// Force load all landscape if enabled (for smaller maps)
+	if (bLoadAllLandscapeAtStart)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			// Find all landscape proxies and force them to be loaded
+			for (TActorIterator<ALandscapeProxy> It(World); It; ++It)
+			{
+				ALandscapeProxy* Landscape = *It;
+				if (Landscape)
+				{
+					// Force landscape to be always loaded and visible
+					Landscape->SetActorEnableCollision(true);
+					Landscape->SetHidden(false);
+					UE_LOG(LogTemp, Log, TEXT("FighterPawn: Forced landscape loading: %s"), *Landscape->GetName());
+				}
+			}
+		}
+	}
+}
+
+void AFighterPawn::UpdateLandscapeStreaming()
+{
+	// This can be called from Tick if needed for dynamic streaming updates
+	// For now, the initial configuration should be sufficient for most cases
 }
