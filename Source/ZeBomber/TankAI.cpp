@@ -10,7 +10,7 @@
 ATankAI::ATankAI()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	bReplicates = true;
+	bReplicates = false;
 
 	// Create explosion component for death effects
 	ExplosionComp = CreateDefaultSubobject<UExplosionComponent>(TEXT("ExplosionComp"));
@@ -184,13 +184,11 @@ void ATankAI::MoveTowardTarget(float DeltaTime)
 
 void ATankAI::MoveZigzag(float DeltaTime)
 {
+	// Periodic debug logging (throttled per-instance via frame count)
 	static int32 LogCounter = 0;
-	LogCounter++;
-	
-	// Log every 60 frames (~1 second at 60fps)
-	if (LogCounter % 60 == 0)
+	if (++LogCounter % 300 == 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MoveZigzag: bHasCrossedCenter=%d, Location=%s, Target=%s"),
+		UE_LOG(LogTemp, Log, TEXT("MoveZigzag: bHasCrossedCenter=%d, Location=%s, Target=%s"),
 			bHasCrossedCenter ? 1 : 0, *GetActorLocation().ToString(), *TargetLocation.ToString());
 	}
 	

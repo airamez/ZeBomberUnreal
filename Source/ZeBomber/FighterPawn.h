@@ -276,7 +276,7 @@ protected:
 
 	/** Streaming distance multiplier for landscape loading around the fighter */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Landscape", meta = (ClampMin = "1.0"))
-	float LandscapeStreamingDistance = 100000.0f;
+	float LandscapeStreamingDistance = 300000.0f;
 
 	/** Whether to force load all landscape at start (for small maps) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Landscape")

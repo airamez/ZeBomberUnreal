@@ -30,15 +30,14 @@ void AHeliAI::BeginPlay()
 	// Store initial spawn location
 	InitialSpawnLocation = GetActorLocation();
 
-	UE_LOG(LogTemp, Error, TEXT("HeliAI: BeginPlay - Location=%s"), *GetActorLocation().ToString());
+	UE_LOG(LogTemp, Log, TEXT("HeliAI: BeginPlay - Location=%s"), *GetActorLocation().ToString());
 
 	// Check and log mesh status
 	if (HeliMesh)
 	{
-		UE_LOG(LogTemp, Error, TEXT("HeliAI: HeliMesh exists"));
-		UE_LOG(LogTemp, Error, TEXT("HeliAI: Mesh asset=%s"), HeliMesh->GetStaticMesh() ? *HeliMesh->GetStaticMesh()->GetName() : TEXT("NULL"));
-		UE_LOG(LogTemp, Error, TEXT("HeliAI: IsVisible=%d IsHiddenInGame=%d"), HeliMesh->IsVisible() ? 1 : 0, HeliMesh->bHiddenInGame ? 1 : 0);
-		UE_LOG(LogTemp, Error, TEXT("HeliAI: RelativeLocation=%s Scale=%s"), *HeliMesh->GetRelativeLocation().ToString(), *HeliMesh->GetRelativeScale3D().ToString());
+		UE_LOG(LogTemp, Log, TEXT("HeliAI: Mesh asset=%s, Visible=%d"),
+			HeliMesh->GetStaticMesh() ? *HeliMesh->GetStaticMesh()->GetName() : TEXT("NULL"),
+			HeliMesh->IsVisible() ? 1 : 0);
 		
 		// Apply the rotation offset to the mesh (visual only)
 		FRotator RelativeRotation = HeliMesh->GetRelativeRotation();

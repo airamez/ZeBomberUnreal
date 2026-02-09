@@ -9,8 +9,8 @@
 
 ATankWaveSpawner::ATankWaveSpawner()
 {
-	PrimaryActorTick.bCanEverTick = true;
-	bReplicates = true;
+	PrimaryActorTick.bCanEverTick = false;
+	bReplicates = false;
 }
 
 void ATankWaveSpawner::BeginPlay()

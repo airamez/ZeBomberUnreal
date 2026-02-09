@@ -9,7 +9,7 @@
 
 ABombProjectile::ABombProjectile()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	// Create collision sphere as root
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComponent"));
@@ -36,22 +36,13 @@ void ABombProjectile::BeginPlay()
 	if (BombMesh)
 	{
 		FRotator BeforeRot = BombMesh->GetRelativeRotation();
-		UE_LOG(LogTemp, Error, TEXT("BOMB BEGINPLAY: Initial rotation: %s"), *BeforeRot.ToString());
+		UE_LOG(LogTemp, Log, TEXT("BombProjectile: BeginPlay rotation: %s"), *BeforeRot.ToString());
 	}
 }
 
 void ABombProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	static bool LoggedOnce = false;
-	if (!LoggedOnce && BombMesh)
-	{
-		LoggedOnce = true;
-		FRotator CurrentRot = BombMesh->GetRelativeRotation();
-		FVector CurrentLoc = BombMesh->GetRelativeLocation();
-		UE_LOG(LogTemp, Error, TEXT("BOMB TICK: Rotation=%s Location=%s"), *CurrentRot.ToString(), *CurrentLoc.ToString());
-	}
 }
 
 void ABombProjectile::OnBombHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)

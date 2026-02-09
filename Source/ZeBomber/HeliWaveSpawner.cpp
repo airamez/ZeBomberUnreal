@@ -9,8 +9,8 @@
 
 AHeliWaveSpawner::AHeliWaveSpawner()
 {
-	PrimaryActorTick.bCanEverTick = true;
-	bReplicates = true;
+	PrimaryActorTick.bCanEverTick = false;
+	bReplicates = false;
 }
 
 void AHeliWaveSpawner::BeginPlay()

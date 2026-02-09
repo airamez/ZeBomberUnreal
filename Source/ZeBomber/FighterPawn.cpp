@@ -18,7 +18,7 @@
 #include "Framework/Application/SlateApplication.h"
 #include "EngineUtils.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "Landscape/LandscapeProxy.h"
+#include "LandscapeProxy.h"
 #include "WorldPartition/WorldPartition.h"
 #include "Engine/World.h"
 
@@ -1009,25 +1009,43 @@ void AFighterPawn::OnEnemyDestroyed(AActor* DestroyedActor)
 
 void AFighterPawn::ConfigureLandscapeStreaming()
 {
-	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Configuring landscape streaming"));
-	
-	// Force load all landscape if enabled (for smaller maps)
-	if (bLoadAllLandscapeAtStart)
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Configuring landscape streaming (distance=%.0f)"), LandscapeStreamingDistance);
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	// Override the World Partition streaming source distances on the player controller
+	// This tells the engine to load cells much further ahead of the player
+	if (APlayerController* PC = Cast<APlayerController>(Controller))
 	{
-		if (UWorld* World = GetWorld())
+		PC->bEnableStreamingSource = true;
+		PC->StreamingSourceDebugColor = FColor::Green;
+	}
+
+	// Set landscape LOD bias via console variable — forces higher detail at distance
+	// Negative values = prefer more detailed LODs, reducing mountain pop-in
+	if (IConsoleVariable* LandscapeLODBias = IConsoleManager::Get().FindConsoleVariable(TEXT("r.LandscapeLODBias")))
+	{
+		LandscapeLODBias->Set(-2);
+		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Set r.LandscapeLODBias = -2"));
+	}
+
+	// Increase landscape LOD distribution scale for smoother transitions at distance
+	if (IConsoleVariable* LODDistScale = IConsoleManager::Get().FindConsoleVariable(TEXT("r.LandscapeLODDistributionScale")))
+	{
+		LODDistScale->Set(3.0f);
+		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Set r.LandscapeLODDistributionScale = 3.0"));
+	}
+
+	// Force all existing landscape proxies to stay visible
+	for (TActorIterator<ALandscapeProxy> It(World); It; ++It)
+	{
+		ALandscapeProxy* Landscape = *It;
+		if (Landscape)
 		{
-			// Find all landscape proxies and force them to be loaded
-			for (TActorIterator<ALandscapeProxy> It(World); It; ++It)
-			{
-				ALandscapeProxy* Landscape = *It;
-				if (Landscape)
-				{
-					// Force landscape to be always loaded and visible
-					Landscape->SetActorEnableCollision(true);
-					Landscape->SetHidden(false);
-					UE_LOG(LogTemp, Log, TEXT("FighterPawn: Forced landscape loading: %s"), *Landscape->GetName());
-				}
-			}
+			Landscape->SetActorEnableCollision(true);
+			Landscape->SetHidden(false);
+			UE_LOG(LogTemp, Log, TEXT("FighterPawn: Configured landscape: %s"), *Landscape->GetName());
 		}
 	}
 }
