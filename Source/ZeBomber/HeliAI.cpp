@@ -15,6 +15,7 @@ AHeliAI::AHeliAI()
 
 	// Create scene root component
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
+	SceneRoot->SetMobility(EComponentMobility::Movable);
 	RootComponent = SceneRoot;
 
 	// Create static mesh component
