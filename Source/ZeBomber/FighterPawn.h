@@ -188,7 +188,7 @@ protected:
 
 	/** Mouse sensitivity for aiming crosshair (pixels per raw mouse unit) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FreeLook", meta = (ClampMin = "0.1"))
-	float AimSensitivity = 2.5f;
+	float AimSensitivity = 1.0f;
 
 	/** Free-look sensitivity multiplier (scales base AimSensitivity for free-look camera rotation) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FreeLook", meta = (ClampMin = "0.1"))
@@ -468,7 +468,7 @@ private:
 
 	/** Volume/sensitivity step per key press */
 	float VolumeStep = 0.05f;
-	float SensitivityStep = 0.5f;
+	float SensitivityStep = 0.1f;
 	float MinSensitivity = 0.1f;
 	float MaxSensitivity = 5.0f;
 

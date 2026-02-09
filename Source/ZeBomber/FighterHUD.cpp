@@ -728,7 +728,7 @@ void AFighterHUD::DrawGameScreen(AFighterPawn* Fighter)
 	}
 	else if (State == EGameState::Paused)
 	{
-		DrawCenteredText(PauseTitle, CY - 220.0f, TitleColor, 2.5f);
+		DrawCenteredText(TEXT("GAME PAUSED"), CY - 220.0f, TitleColor, 2.5f);
 
 		// Draw background panel for instructions
 		TArray<FString> Lines;
@@ -757,8 +757,8 @@ void AFighterHUD::DrawGameScreen(AFighterPawn* Fighter)
 
 		// Place resume/quit below instructions with some spacing
 		float PromptY = LineY + 20.0f;
-		DrawCenteredText(PauseResumeMessage, PromptY, PromptColor, 1.1f);
-		DrawCenteredText(PauseQuitMessage, PromptY + 30.0f, RedColor, 1.1f);
+		DrawCenteredText(TEXT("Press C to Resume"), PromptY, PromptColor, 1.1f);
+		DrawCenteredText(TEXT("Press X to Quit"), PromptY + 30.0f, RedColor, 1.1f);
 	}
 	else if (State == EGameState::GameOver)
 	{
