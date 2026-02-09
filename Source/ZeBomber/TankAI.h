@@ -28,6 +28,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tank")
 	class USkeletalMeshComponent* TankMesh;
 
+	/** Box collision component for reliable hit detection */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tank")
+	class UBoxComponent* CollisionBox;
+
 	/** The root scene component (for actor rotation) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tank")
 	class USceneComponent* SceneRoot;

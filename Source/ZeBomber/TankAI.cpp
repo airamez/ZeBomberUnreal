@@ -4,6 +4,7 @@
 #include "FighterPawn.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SceneComponent.h"
+#include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 ATankAI::ATankAI()
@@ -18,12 +19,21 @@ ATankAI::ATankAI()
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	RootComponent = SceneRoot;
 
+	// Create box collision component for reliable hit detection
+	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
+	CollisionBox->SetupAttachment(SceneRoot);
+	CollisionBox->SetBoxExtent(FVector(150.0f, 75.0f, 75.0f));
+	CollisionBox->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+	CollisionBox->SetGenerateOverlapEvents(true);
+	CollisionBox->SetSimulatePhysics(false);
+	CollisionBox->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
+
 	// Create the skeletal mesh component as child (for visual rotation)
 	TankMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("TankMesh"));
 	TankMesh->SetupAttachment(SceneRoot);
 
-	// Set default collision
-	TankMesh->SetCollisionProfileName(TEXT("Pawn"));
+	// Disable collision on mesh - CollisionBox handles it
+	TankMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TankMesh->SetSimulatePhysics(false);
 
 	// Default target is world origin

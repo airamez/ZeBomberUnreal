@@ -62,20 +62,71 @@ void ABombProjectile::OnBombHit(UPrimitiveComponent* HitComp, AActor* OtherActor
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("BombProjectile: Hit %s"), *OtherActor->GetName());
+	UE_LOG(LogTemp, Log, TEXT("BombProjectile: Hit %s at %s"), *OtherActor->GetName(), *GetActorLocation().ToString());
 
-	// Check if we directly hit a tank
-	if (ATankAI* Tank = Cast<ATankAI>(OtherActor))
+	// Splash damage: find all actors within ExplosionRadius
+	FVector BombLocation = GetActorLocation();
+
+	if (ExplosionRadius > 0.0f)
 	{
-		UE_LOG(LogTemp, Log, TEXT("BombProjectile: Direct hit on tank!"));
-		Tank->Destroy();
+		// Use sphere trace to find all actors in blast radius
+		TArray<FHitResult> HitResults;
+		FCollisionShape Sphere = FCollisionShape::MakeSphere(ExplosionRadius);
+		bool bHasHits = GetWorld()->SweepMultiByChannel(
+			HitResults,
+			BombLocation,
+			BombLocation,
+			FQuat::Identity,
+			ECC_WorldDynamic,
+			Sphere
+		);
+
+		if (bHasHits)
+		{
+			for (const FHitResult& Hit : HitResults)
+			{
+				AActor* HitActor = Hit.GetActor();
+				if (!HitActor || HitActor == this || HitActor == GetOwner())
+				{
+					continue;
+				}
+
+				if (ATankAI* Tank = Cast<ATankAI>(HitActor))
+				{
+					float Dist = FVector::Dist(BombLocation, Tank->GetActorLocation());
+					UE_LOG(LogTemp, Log, TEXT("BombProjectile: Splash hit tank at distance %.0f (radius %.0f)"), Dist, ExplosionRadius);
+					Tank->Destroy();
+				}
+				else if (AHeliAI* Heli = Cast<AHeliAI>(HitActor))
+				{
+					float Dist = FVector::Dist(BombLocation, Heli->GetActorLocation());
+					UE_LOG(LogTemp, Log, TEXT("BombProjectile: Splash hit heli at distance %.0f (radius %.0f)"), Dist, ExplosionRadius);
+					Heli->Destroy();
+				}
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("BombProjectile: No splash hits found within radius %.0f"), ExplosionRadius);
+		}
 	}
 
-	// Check if we directly hit a helicopter
-	if (AHeliAI* Heli = Cast<AHeliAI>(OtherActor))
+	// Also check direct hit (in case overlap missed due to collision channel)
+	if (ATankAI* Tank = Cast<ATankAI>(OtherActor))
 	{
-		UE_LOG(LogTemp, Log, TEXT("BombProjectile: Direct hit on helicopter!"));
-		Heli->Destroy();
+		if (!Tank->IsActorBeingDestroyed())
+		{
+			UE_LOG(LogTemp, Log, TEXT("BombProjectile: Direct hit on tank!"));
+			Tank->Destroy();
+		}
+	}
+	else if (AHeliAI* Heli = Cast<AHeliAI>(OtherActor))
+	{
+		if (!Heli->IsActorBeingDestroyed())
+		{
+			UE_LOG(LogTemp, Log, TEXT("BombProjectile: Direct hit on helicopter!"));
+			Heli->Destroy();
+		}
 	}
 
 	// Destroy the bomb
