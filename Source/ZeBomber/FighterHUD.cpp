@@ -6,6 +6,8 @@
 #include "HeliAI.h"
 #include "Engine/Canvas.h"
 #include "Engine/Font.h"
+#include "Engine/FontFace.h"
+#include "Fonts/CompositeFont.h"
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
 
@@ -18,29 +20,35 @@ AFighterHUD::AFighterHUD()
 		HUDFont = FontObj.Object;
 	}
 
-	// Load monospace font for instructions (military style)
-	// Try the Default font which should be monospace
-	static ConstructorHelpers::FObjectFinder<UFont> MonoFontObj(TEXT("/Engine/EngineFonts/Default"));
-	if (MonoFontObj.Succeeded())
+	// InstructionsFont will be created in BeginPlay (NewObject not safe in CDO constructor)
+	InstructionsFont = nullptr;
+}
+
+void AFighterHUD::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Create a monospace font for instructions at runtime
+	// DroidSansMono.ttf ships with UE Slate resources
+	FString MonoFontPath = FPaths::EngineContentDir() / TEXT("Slate/Fonts/DroidSansMono.ttf");
+	if (FPaths::FileExists(MonoFontPath))
 	{
-		InstructionsFont = MonoFontObj.Object;
-		UE_LOG(LogTemp, Warning, TEXT("FighterHUD: Loaded Default font for instructions"));
+		InstructionsFont = NewObject<UFont>(this, TEXT("InstructionsFont"));
+		InstructionsFont->FontCacheType = EFontCacheType::Runtime;
+		FCompositeFont* CompositeFont = const_cast<FCompositeFont*>(InstructionsFont->GetCompositeFont());
+		if (CompositeFont)
+		{
+			CompositeFont->DefaultTypeface.Fonts.Empty();
+			FTypefaceEntry& Entry = CompositeFont->DefaultTypeface.Fonts.AddDefaulted_GetRef();
+			Entry.Name = TEXT("Default");
+			Entry.Font = FFontData(MonoFontPath, EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
+		}
+		UE_LOG(LogTemp, Warning, TEXT("FighterHUD: Created monospace font from DroidSansMono.ttf"));
 	}
 	else
 	{
-		// Try the Roboto font as fallback
-		static ConstructorHelpers::FObjectFinder<UFont> RobotoFontObj(TEXT("/Engine/EngineFonts/Roboto"));
-		if (RobotoFontObj.Succeeded())
-		{
-			InstructionsFont = RobotoFontObj.Object;
-			UE_LOG(LogTemp, Warning, TEXT("FighterHUD: Loaded Roboto font for instructions"));
-		}
-		else
-		{
-			// Final fallback to regular font
-			InstructionsFont = HUDFont;
-			UE_LOG(LogTemp, Warning, TEXT("FighterHUD: Using regular HUD font for instructions (fallback)"));
-		}
+		InstructionsFont = HUDFont;
+		UE_LOG(LogTemp, Warning, TEXT("FighterHUD: DroidSansMono.ttf not found, using Roboto fallback"));
 	}
 }
 

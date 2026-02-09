@@ -20,6 +20,7 @@ class ZEBOMBER_API AFighterHUD : public AHUD
 public:
 	AFighterHUD();
 
+	virtual void BeginPlay() override;
 	virtual void DrawHUD() override;
 
 protected:
@@ -251,7 +252,6 @@ private:
 	/** Cached HUD font */
 	UFont* HUDFont = nullptr;
 
-	/** Monospace font for instructions (military style) */
-	UPROPERTY(EditAnywhere, Category = "HUD|Text")
+	/** Font for instructions display */
 	UFont* InstructionsFont = nullptr;
 };
