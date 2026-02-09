@@ -6,14 +6,10 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "ExplosionComponent.h"
 
 ABombProjectile::ABombProjectile()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
-	// Create explosion component
-	ExplosionComp = CreateDefaultSubobject<UExplosionComponent>(TEXT("ExplosionComp"));
 
 	// Create collision sphere as root
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComponent"));
@@ -82,19 +78,6 @@ void ABombProjectile::OnBombHit(UPrimitiveComponent* HitComp, AActor* OtherActor
 		Heli->Destroy();
 	}
 
-	// Check for tanks and helicopters in explosion radius
-	if (ExplosionRadius > 0.0f)
-	{
-		DestroyTanksInRadius(GetActorLocation());
-		DestroyHelisInRadius(GetActorLocation());
-	}
-
-	// Spawn explosion effect before destroying
-	if (ExplosionComp)
-	{
-		ExplosionComp->SpawnExplosion(GetActorLocation(), Hit.Normal);
-	}
-
 	// Destroy the bomb
 	Destroy();
 }
@@ -124,42 +107,3 @@ void ABombProjectile::OnBombOverlap(UPrimitiveComponent* OverlappedComp, AActor*
 	}
 }
 
-void ABombProjectile::DestroyTanksInRadius(const FVector& ExplosionLocation)
-{
-	// Find all TankAI actors in the explosion radius
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATankAI::StaticClass(), FoundActors);
-
-	for (AActor* Actor : FoundActors)
-	{
-		if (Actor && !Actor->IsPendingKillPending())
-		{
-			float Distance = FVector::Dist(ExplosionLocation, Actor->GetActorLocation());
-			if (Distance <= ExplosionRadius)
-			{
-				UE_LOG(LogTemp, Log, TEXT("BombProjectile: Tank destroyed by explosion at distance %.0f"), Distance);
-				Actor->Destroy();
-			}
-		}
-	}
-}
-
-void ABombProjectile::DestroyHelisInRadius(const FVector& ExplosionLocation)
-{
-	// Find all HeliAI actors in the explosion radius
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHeliAI::StaticClass(), FoundActors);
-
-	for (AActor* Actor : FoundActors)
-	{
-		if (Actor && !Actor->IsPendingKillPending())
-		{
-			float Distance = FVector::Dist(ExplosionLocation, Actor->GetActorLocation());
-			if (Distance <= ExplosionRadius)
-			{
-				UE_LOG(LogTemp, Log, TEXT("BombProjectile: Helicopter destroyed by explosion at distance %.0f"), Distance);
-				Actor->Destroy();
-			}
-		}
-	}
-}

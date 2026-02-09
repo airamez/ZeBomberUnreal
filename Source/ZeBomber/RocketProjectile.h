@@ -7,7 +7,6 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "TankAI.h"
 #include "HeliAI.h"
-#include "ExplosionComponent.h"
 #include "Sound/SoundBase.h"
 #include "RocketProjectile.generated.h"
 
@@ -66,9 +65,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket")
 	FRotator MeshRotationOffset = FRotator(0.0f, 90.0f, 0.0f);
 
-	/** Explosion component for customizable explosion effects */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rocket")
-	UExplosionComponent* ExplosionComp;
 
 	/** Sound to play when rocket is fired */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rocket")
@@ -79,6 +75,4 @@ private:
 	UFUNCTION()
 	void OnRocketHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-	/** Check for helicopters in explosion radius and destroy them */
-	void DestroyHelisInRadius(const FVector& ExplosionLocation);
 };

@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "ExplosionComponent.h"
 #include "BombProjectile.generated.h"
 
 UCLASS()
@@ -43,9 +42,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bomb")
 	FRotator MeshRotationOffset = FRotator(0.0f, 0.0f, 0.0f);
 
-	/** Explosion component for customizable explosion effects */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bomb")
-	UExplosionComponent* ExplosionComp;
 
 private:
 	/** Called when the bomb hits something */
@@ -56,9 +52,4 @@ private:
 	UFUNCTION()
 	void OnBombOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	/** Check for tanks in explosion radius and destroy them */
-	void DestroyTanksInRadius(const FVector& ExplosionLocation);
-
-	/** Check for helicopters in explosion radius and destroy them */
-	void DestroyHelisInRadius(const FVector& ExplosionLocation);
 };
