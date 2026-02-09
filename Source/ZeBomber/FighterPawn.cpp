@@ -163,6 +163,13 @@ void AFighterPawn::BeginPlay()
 		// Game-only mode: raw mouse input, no Slate cursor processing = zero lag
 		FInputModeGameOnly InputMode;
 		PC->SetInputMode(InputMode);
+
+		// Disable mouse smoothing for immediate response in packaged builds
+		if (PC->PlayerInput)
+		{
+			PC->PlayerInput->SetMouseSensitivity(1.0f);
+			PC->PlayerInput->bEnableMouseSmoothing = false;
+		}
 	}
 
 	// Bind to existing enemy destruction events for score tracking
@@ -190,11 +197,13 @@ void AFighterPawn::Tick(float DeltaTime)
 		return;
 	}
 
-	// Read raw mouse delta ONCE per frame (consumed on read, so only call once)
-	APlayerController* PC = Cast<APlayerController>(Controller);
-	if (PC)
+	// Read raw mouse delta ONCE per frame using Slate for zero-lag in packaged builds
+	// GetInputMouseDelta can have frame lag in standalone/packaged builds
+	if (FSlateApplication::IsInitialized())
 	{
-		PC->GetInputMouseDelta(FrameMouseDeltaX, FrameMouseDeltaY);
+		FVector2D CursorDelta = FSlateApplication::Get().GetCursorDelta();
+		FrameMouseDeltaX = CursorDelta.X;
+		FrameMouseDeltaY = -CursorDelta.Y; // Negate: Slate Y+ is down, but we want Y+ = mouse up
 	}
 	else
 	{
@@ -720,10 +729,9 @@ void AFighterPawn::UpdateFreeLook(float DeltaTime)
 
 	if (bFreeLookActive)
 	{
-		// Use cached frame mouse delta for free-look rotation with separate sensitivity
-		float EffectiveFreeLookSensitivity = AimSensitivity * FreeLookSensitivityMultiplier;
-		FreeLookRotation.Yaw += FrameMouseDeltaX * EffectiveFreeLookSensitivity;
-		FreeLookRotation.Pitch += FrameMouseDeltaY * EffectiveFreeLookSensitivity;
+		// Use FreeLookSensitivity directly (degrees per pixel) for uniform mouse feel
+		FreeLookRotation.Yaw += FrameMouseDeltaX * FreeLookSensitivity;
+		FreeLookRotation.Pitch += FrameMouseDeltaY * FreeLookSensitivity;
 
 		// Clamp free-look angles
 		FreeLookRotation.Yaw = FMath::Clamp(FreeLookRotation.Yaw, -FreeLookMaxYaw, FreeLookMaxYaw);
