@@ -164,11 +164,10 @@ void AFighterPawn::BeginPlay()
 		FInputModeGameOnly InputMode;
 		PC->SetInputMode(InputMode);
 
-		// Disable mouse smoothing for immediate response in packaged builds
+		// Set raw mouse sensitivity to 1:1 for immediate response
 		if (PC->PlayerInput)
 		{
 			PC->PlayerInput->SetMouseSensitivity(1.0f);
-			PC->PlayerInput->bEnableMouseSmoothing = false;
 		}
 	}
 
@@ -197,13 +196,11 @@ void AFighterPawn::Tick(float DeltaTime)
 		return;
 	}
 
-	// Read raw mouse delta ONCE per frame using Slate for zero-lag in packaged builds
-	// GetInputMouseDelta can have frame lag in standalone/packaged builds
-	if (FSlateApplication::IsInitialized())
+	// Read raw mouse delta ONCE per frame (consumed on read, so only call once)
+	APlayerController* PC = Cast<APlayerController>(Controller);
+	if (PC)
 	{
-		FVector2D CursorDelta = FSlateApplication::Get().GetCursorDelta();
-		FrameMouseDeltaX = CursorDelta.X;
-		FrameMouseDeltaY = -CursorDelta.Y; // Negate: Slate Y+ is down, but we want Y+ = mouse up
+		PC->GetInputMouseDelta(FrameMouseDeltaX, FrameMouseDeltaY);
 	}
 	else
 	{
