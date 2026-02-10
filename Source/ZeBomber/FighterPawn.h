@@ -361,6 +361,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* FreeLookAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* DebugTestWaveAction;
+
 	UInputAction* PauseAction;
 	UInputAction* ContinueAction;
 	UInputAction* QuitAction;
@@ -523,7 +526,7 @@ private:
 	void OnVolumeDown(const FInputActionValue& Value);
 	void OnSensitivityUp(const FInputActionValue& Value);
 	void OnSensitivityDown(const FInputActionValue& Value);
-	void OnToggleJetHUD(const FInputActionValue& Value);
+	void OnDebugTestWave(const FInputActionValue& Value);
 	void OnPausePressed(const FInputActionValue& Value);
 	void OnContinuePressed(const FInputActionValue& Value);
 	void OnQuitGame(const FInputActionValue& Value);

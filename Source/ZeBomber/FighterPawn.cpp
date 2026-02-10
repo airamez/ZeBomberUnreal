@@ -51,6 +51,10 @@ AFighterPawn::AFighterPawn()
 	PauseAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_Pause_Auto"));
 	PauseAction->ValueType = EInputActionValueType::Boolean;
 
+	// Debug action for testing (Ctrl+Delete)
+	DebugTestWaveAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_DebugTestWave_Auto"));
+	DebugTestWaveAction->ValueType = EInputActionValueType::Boolean;
+
 	ContinueAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_Continue_Auto"));
 	ContinueAction->ValueType = EInputActionValueType::Boolean;
 
@@ -132,7 +136,9 @@ void AFighterPawn::BeginPlay()
 	FreeLookMappingContext->MapKey(RadarZoomOutAction, EKeys::RightBracket);
 	FreeLookMappingContext->MapKey(SpeedUpAction, EKeys::MouseScrollUp);
 	FreeLookMappingContext->MapKey(SpeedDownAction, EKeys::MouseScrollDown);
-	UE_LOG(LogTemp, Warning, TEXT("FighterPawn: Created FreeLook mapping context with RMB, Q/E slide, [ ] zoom, mouse wheel speed"));
+	// Debug: Delete key = Test high-level wave
+	FreeLookMappingContext->MapKey(DebugTestWaveAction, EKeys::Delete);
+	UE_LOG(LogTemp, Warning, TEXT("FighterPawn: Created FreeLook mapping context with RMB, Q/E slide, [ ] zoom, mouse wheel speed, Delete debug"));
 
 	// Add input mapping contexts
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
@@ -372,6 +378,12 @@ void AFighterPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		{
 			EIC->BindAction(SensitivityDownAction, ETriggerEvent::Started, this, &AFighterPawn::OnSensitivityDown);
 		}
+
+		// Debug: Ctrl+Delete = Test high-level wave
+		if (DebugTestWaveAction)
+		{
+			EIC->BindAction(DebugTestWaveAction, ETriggerEvent::Started, this, &AFighterPawn::OnDebugTestWave);
+		}
 	}
 }
 
@@ -518,6 +530,48 @@ void AFighterPawn::OnPausePressed(const FInputActionValue& Value)
 	}
 }
 
+void AFighterPawn::OnDebugTestWave(const FInputActionValue& Value)
+{
+	if (CurrentGameState != EGameState::Playing) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("FighterPawn: DEBUG - Destroying all enemies except one of each type"));
+
+	// Find all tanks and keep only one
+	TArray<ATankAI*> AllTanks;
+	for (TActorIterator<ATankAI> It(GetWorld()); It; ++It)
+	{
+		AllTanks.Add(*It);
+	}
+
+	// Destroy all tanks except the first one
+	for (int32 i = 1; i < AllTanks.Num(); i++)
+	{
+		if (AllTanks[i] && AllTanks[i]->IsValidLowLevel())
+		{
+			AllTanks[i]->Destroy();
+		}
+	}
+
+	// Find all helicopters and keep only one
+	TArray<AHeliAI*> AllHelis;
+	for (TActorIterator<AHeliAI> It(GetWorld()); It; ++It)
+	{
+		AllHelis.Add(*It);
+	}
+
+	// Destroy all helicopters except the first one
+	for (int32 i = 1; i < AllHelis.Num(); i++)
+	{
+		if (AllHelis[i] && AllHelis[i]->IsValidLowLevel())
+		{
+			AllHelis[i]->Destroy();
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("FighterPawn: DEBUG - Kept 1 tank and 1 heli for testing. Destroyed %d tanks and %d helis."), 
+		FMath::Max(0, AllTanks.Num() - 1), FMath::Max(0, AllHelis.Num() - 1));
+}
+
 void AFighterPawn::OnContinuePressed(const FInputActionValue& Value)
 {
 	if (CurrentGameState == EGameState::Instructions || CurrentGameState == EGameState::WaveEnd)
@@ -589,8 +643,25 @@ void AFighterPawn::StartNextWave()
 	WaveTotalTanks = 0;
 	WaveTotalHelis = 0;
 	WaveStartTime = GetWorld()->GetTimeSeconds();
+	
+	// Reset base HP at the start of each wave
+	BaseHP = BaseMaxHP;
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: Base HP reset to %d for wave %d"), BaseHP, CurrentWave);
 
 	CurrentGameState = EGameState::Playing;
+	
+	// Reset mouse crosshair to center when game starts
+	if (CurrentWave == 1)
+	{
+		APlayerController* PC = Cast<APlayerController>(Controller);
+		if (PC)
+		{
+			int32 SizeX, SizeY;
+			PC->GetViewportSize(SizeX, SizeY);
+			VirtualCursorPos = FVector2D(SizeX * 0.5f, SizeY * 0.5f);
+			UE_LOG(LogTemp, Log, TEXT("FighterPawn: Mouse crosshair reset to center for game start"));
+		}
+	}
 
 	// Find spawners and trigger them
 	for (TActorIterator<ATankWaveSpawner> It(GetWorld()); It; ++It)
