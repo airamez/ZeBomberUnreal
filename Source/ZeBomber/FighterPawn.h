@@ -132,6 +132,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	float GetRadarZoom() const { return RadarZoom; }
 
+	/** Returns whether FPS display is enabled */
+	UFUNCTION(BlueprintCallable, Category = "Settings")
+	bool IsFpsDisplayEnabled() const { return bShowFps; }
+
+	/** Returns current smoothed FPS value for display */
+	UFUNCTION(BlueprintCallable, Category = "Settings")
+	float GetCurrentFps() const { return CurrentFps; }
+
 
 protected:
 	virtual void BeginPlay() override;
@@ -392,6 +400,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* SensitivityDownAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* FpsToggleAction;
+
 private:
 	// ==================== Internal State ====================
 
@@ -464,7 +475,7 @@ private:
 		TEXT("  | Control: W S A D || Adjust speed: Mouse wheel\n")
 		TEXT("  | Slide Left/Right: Q E || Look around: Right Mouse\n")
 		TEXT("  | Drop bombs: Space || Fire rockets: Left Mouse\n")
-		TEXT("  | Zoom radar: [ ] keys\n")
+		TEXT("  | Zoom radar: [ ] keys || Toggle FPS: F key\n")
 		TEXT("  | Volume: Arrows Up/Down || Sensitivity: Arrows Left/Right\n")
 		TEXT("  | Pause game: ESC\n")
 		TEXT("  | Bombs destroy tanks!\n")
@@ -505,6 +516,18 @@ private:
 	/** Current free-look rotation offset from default camera orientation */
 	FRotator FreeLookRotation = FRotator::ZeroRotator;
 
+	/** Whether FPS display is enabled */
+	bool bShowFps = false;
+
+	/** FPS display update timer */
+	float FpsUpdateTimer = 0.0f;
+
+	/** FPS update interval in seconds (how often to refresh the display) */
+	float FpsUpdateInterval = 5.0f;
+
+	/** Current smoothed FPS value for display */
+	float CurrentFps = 0.0f;
+
 	// ==================== Input Handlers ====================
 
 	void OnPitchDown(const FInputActionValue& Value);
@@ -534,6 +557,7 @@ private:
 	void OnRadarZoomOut(const FInputActionValue& Value);
 	void OnSpeedUp(const FInputActionValue& Value);
 	void OnSpeedDown(const FInputActionValue& Value);
+	void OnFpsToggle(const FInputActionValue& Value);
 
 	// ==================== Core Logic ====================
 

@@ -162,16 +162,28 @@ void AFighterHUD::DrawSettingsInfo(AFighterPawn* Fighter)
 	int32 VolPercent = FMath::RoundToInt(Fighter->GetSoundVolume() * 100.0f);
 	FString VolText = FString::Printf(TEXT("Volume: %d%%"), VolPercent);
 	FString SensText = FString::Printf(TEXT("Sensitivity: %.1f"), Fighter->GetAimSensitivity());
+	
+	// Add FPS text if enabled
+	FString FpsText;
+	float FpsWidth = 0.0f;
+	if (Fighter->IsFpsDisplayEnabled())
+	{
+		// Get smoothed FPS from FighterPawn
+		float FPS = Fighter->GetCurrentFps();
+		FpsText = FString::Printf(TEXT("FPS: %.0f"), FPS);
+		FpsWidth = HUDFont->GetStringSize(*FpsText) * TextScale;
+	}
 
 	// Measure text to auto-size the panel
 	float VolWidth = HUDFont->GetStringSize(*VolText) * TextScale;
 	float SensWidth = HUDFont->GetStringSize(*SensText) * TextScale;
-	float MaxTextWidth = FMath::Max(VolWidth, SensWidth);
+	float MaxTextWidth = FMath::Max3(VolWidth, SensWidth, FpsWidth);
 
 	// Position at lower-right corner, tight fit
 	float Padding = 6.0f;
+	float LineCount = Fighter->IsFpsDisplayEnabled() ? 3.0f : 2.0f;
 	float PanelWidth = MaxTextWidth + Padding * 2.0f;
-	float PanelHeight = LineSpacing * 2.0f + Padding * 2.0f;
+	float PanelHeight = LineSpacing * LineCount + Padding * 2.0f;
 	float Margin = 8.0f;
 	float X = CanvasWidth - Margin - PanelWidth;
 	float Y = CanvasHeight - Margin - PanelHeight;
@@ -198,6 +210,17 @@ void AFighterHUD::DrawSettingsInfo(AFighterPawn* Fighter)
 	SensItem.bOutlined = true;
 	SensItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
 	Canvas->DrawItem(SensItem);
+
+	// FPS display (if enabled)
+	if (Fighter->IsFpsDisplayEnabled())
+	{
+		TextY += LineSpacing;
+		FCanvasTextItem FpsItem(FVector2D(RightEdge - FpsWidth, TextY), FText::FromString(FpsText), HUDFont, SettingsTextColor);
+		FpsItem.Scale = FVector2D(TextScale, TextScale);
+		FpsItem.bOutlined = true;
+		FpsItem.OutlineColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.6f);
+		Canvas->DrawItem(FpsItem);
+	}
 }
 
 void AFighterHUD::DrawScoreInfo(AFighterPawn* Fighter)

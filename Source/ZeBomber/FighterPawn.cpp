@@ -81,6 +81,10 @@ AFighterPawn::AFighterPawn()
 
 	SpeedDownAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_SpeedDown_Auto"));
 	SpeedDownAction->ValueType = EInputActionValueType::Boolean;
+
+	// Create FPS toggle input action (F key)
+	FpsToggleAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_FpsToggle_Auto"));
+	FpsToggleAction->ValueType = EInputActionValueType::Boolean;
 }
 
 void AFighterPawn::BeginPlay()
@@ -136,9 +140,10 @@ void AFighterPawn::BeginPlay()
 	FreeLookMappingContext->MapKey(RadarZoomOutAction, EKeys::RightBracket);
 	FreeLookMappingContext->MapKey(SpeedUpAction, EKeys::MouseScrollUp);
 	FreeLookMappingContext->MapKey(SpeedDownAction, EKeys::MouseScrollDown);
+	FreeLookMappingContext->MapKey(FpsToggleAction, EKeys::F);
 	// Debug: Delete key = Test high-level wave
 	FreeLookMappingContext->MapKey(DebugTestWaveAction, EKeys::Delete);
-	UE_LOG(LogTemp, Warning, TEXT("FighterPawn: Created FreeLook mapping context with RMB, Q/E slide, [ ] zoom, mouse wheel speed, Delete debug"));
+	UE_LOG(LogTemp, Warning, TEXT("FighterPawn: Created FreeLook mapping context with RMB, Q/E slide, [ ] zoom, mouse wheel speed, F key FPS toggle, Delete debug"));
 
 	// Add input mapping contexts
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
@@ -221,6 +226,18 @@ void AFighterPawn::Tick(float DeltaTime)
 	if (DamageFlashAlpha > 0.0f)
 	{
 		DamageFlashAlpha = FMath::Max(0.0f, DamageFlashAlpha - DamageFlashDecayRate * DeltaTime);
+	}
+
+	// Update FPS display timer (runs even when paused)
+	if (bShowFps)
+	{
+		FpsUpdateTimer -= DeltaTime;
+		if (FpsUpdateTimer <= 0.0f)
+		{
+			// Calculate current FPS and update display value
+			CurrentFps = 1.0f / DeltaTime;
+			FpsUpdateTimer = FpsUpdateInterval;
+		}
 	}
 
 	// Only run gameplay when Playing
@@ -383,6 +400,12 @@ void AFighterPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		if (DebugTestWaveAction)
 		{
 			EIC->BindAction(DebugTestWaveAction, ETriggerEvent::Started, this, &AFighterPawn::OnDebugTestWave);
+		}
+
+		// F key = Toggle FPS display
+		if (FpsToggleAction)
+		{
+			EIC->BindAction(FpsToggleAction, ETriggerEvent::Started, this, &AFighterPawn::OnFpsToggle);
 		}
 	}
 }
@@ -596,6 +619,12 @@ void AFighterPawn::OnQuitGame(const FInputActionValue& Value)
 		UE_LOG(LogTemp, Log, TEXT("FighterPawn: Quitting game"));
 		UKismetSystemLibrary::QuitGame(GetWorld(), Cast<APlayerController>(Controller), EQuitPreference::Quit, false);
 	}
+}
+
+void AFighterPawn::OnFpsToggle(const FInputActionValue& Value)
+{
+	bShowFps = !bShowFps;
+	UE_LOG(LogTemp, Log, TEXT("FighterPawn: FPS display %s"), bShowFps ? TEXT("ENABLED") : TEXT("DISABLED"));
 }
 
 void AFighterPawn::DamageBase(int32 Damage)
