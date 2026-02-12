@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "ExplosionComponent.h"
+#include "FighterPawn.h"
 #include "TankAI.generated.h"
 
 UCLASS()
@@ -160,4 +161,7 @@ private:
 
 	/** Fire at the base (damage it) */
 	void FireAtBase();
+
+	/** Check if the game is currently paused */
+	bool IsGamePaused() const;
 };

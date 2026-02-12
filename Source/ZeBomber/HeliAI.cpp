@@ -72,6 +72,12 @@ void AHeliAI::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// Don't update AI when game is paused
+	if (IsGamePaused())
+	{
+		return;
+	}
+
 	if (!bTargetSet)
 	{
 		return;
@@ -210,4 +216,20 @@ void AHeliAI::RotateTowardTarget(float DeltaTime)
 	// Smoothly interpolate toward target rotation (only Yaw)
 	float NewYaw = FMath::FInterpTo(CurrentRotation.Yaw, TargetRotation.Yaw, DeltaTime, RotationSpeed);
 	SetActorRotation(FRotator(0.0f, NewYaw, 0.0f));
+}
+
+bool AHeliAI::IsGamePaused() const
+{
+	// Get the player pawn and check if game is paused
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			if (AFighterPawn* Fighter = Cast<AFighterPawn>(PC->GetPawn()))
+			{
+				return Fighter->GetGameState() == EGameState::Paused;
+			}
+		}
+	}
+	return false;
 }

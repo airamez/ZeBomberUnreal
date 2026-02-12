@@ -169,7 +169,7 @@ protected:
 
 	/** Mouse sensitivity for free-look (degrees per pixel) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FreeLook", meta = (ClampMin = "0.01"))
-	float FreeLookSensitivity = 0.15f;
+	float FreeLookSensitivity = 0.05f;
 
 	/** Maximum free-look yaw angle from center (degrees) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FreeLook", meta = (ClampMin = "1.0"))
@@ -185,7 +185,7 @@ protected:
 
 	/** Mouse sensitivity for aiming crosshair (pixels per raw mouse unit) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FreeLook", meta = (ClampMin = "0.1"))
-	float AimSensitivity = 1.0f;
+	float AimSensitivity = 0.5f;
 
 	/** Free-look sensitivity multiplier (scales base AimSensitivity for free-look camera rotation) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FreeLook", meta = (ClampMin = "0.1"))

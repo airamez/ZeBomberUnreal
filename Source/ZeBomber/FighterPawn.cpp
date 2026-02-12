@@ -770,9 +770,14 @@ void AFighterPawn::UpdateVirtualCursor(float DeltaTime)
 	APlayerController* PC = Cast<APlayerController>(Controller);
 	if (!PC) return;
 
-	// Use cached frame mouse delta (negate Y: UE positive DeltaY = mouse up, but screen Y increases down)
-	VirtualCursorPos.X += FrameMouseDeltaX * AimSensitivity;
-	VirtualCursorPos.Y -= FrameMouseDeltaY * AimSensitivity;
+	// Frame-time independent mouse movement for consistent feel at any framerate
+	// Use 60fps as baseline (1/60 = 0.0167) to normalize movement
+	float FrameScale = DeltaTime * 60.0f;
+	
+	// Apply mouse delta with sensitivity and frame scaling
+	// Negate Y: UE positive DeltaY = mouse up, but screen Y increases down
+	VirtualCursorPos.X += FrameMouseDeltaX * AimSensitivity * FrameScale;
+	VirtualCursorPos.Y -= FrameMouseDeltaY * AimSensitivity * FrameScale;
 
 	// Clamp to viewport bounds
 	int32 SizeX, SizeY;
@@ -789,9 +794,12 @@ void AFighterPawn::UpdateFreeLook(float DeltaTime)
 
 	if (bFreeLookActive)
 	{
-		// Use FreeLookSensitivity directly (degrees per pixel) for uniform mouse feel
-		FreeLookRotation.Yaw += FrameMouseDeltaX * FreeLookSensitivity;
-		FreeLookRotation.Pitch += FrameMouseDeltaY * FreeLookSensitivity;
+		// Frame-time independent free-look movement
+		float FrameScale = DeltaTime * 60.0f;
+		
+		// Use FreeLookSensitivity directly (degrees per pixel) with frame scaling
+		FreeLookRotation.Yaw += FrameMouseDeltaX * FreeLookSensitivity * FrameScale;
+		FreeLookRotation.Pitch += FrameMouseDeltaY * FreeLookSensitivity * FrameScale;
 
 		// Clamp free-look angles
 		FreeLookRotation.Yaw = FMath::Clamp(FreeLookRotation.Yaw, -FreeLookMaxYaw, FreeLookMaxYaw);

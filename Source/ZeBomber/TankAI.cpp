@@ -61,6 +61,12 @@ void ATankAI::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// Don't update AI when game is paused
+	if (IsGamePaused())
+	{
+		return;
+	}
+
 	// Initialize zigzag on first tick if enabled but not yet initialized
 	if (bUseZigzagMovement && !bZigzagInitialized)
 	{
@@ -373,4 +379,20 @@ void ATankAI::RotateTowardZigzagAngle(float DeltaTime)
 	NewRotation.Roll = 0.0f;
 	
 	SetActorRotation(NewRotation);
+}
+
+bool ATankAI::IsGamePaused() const
+{
+	// Get the player pawn and check if game is paused
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			if (AFighterPawn* Fighter = Cast<AFighterPawn>(PC->GetPawn()))
+			{
+				return Fighter->GetGameState() == EGameState::Paused;
+			}
+		}
+	}
+	return false;
 }
