@@ -660,9 +660,11 @@ void AFighterHUD::DrawGameScreen(AFighterPawn* Fighter)
 	float CY = Canvas->SizeY * 0.5f;
 	EGameState State = Fighter->GetGameState();
 
-	// Dark overlay
-	FLinearColor OverlayColor(0.0f, 0.0f, 0.0f, 0.7f);
-	Canvas->K2_DrawBox(FVector2D(0.0f, 0.0f), FVector2D(Canvas->SizeX, Canvas->SizeY), 1.0f, OverlayColor);
+	// Dark overlay (filled rectangle covering entire screen)
+	FLinearColor OverlayColor(0.0f, 0.0f, 0.0f, 0.85f);
+	FCanvasTileItem OverlayTile(FVector2D(0.0f, 0.0f), FVector2D(Canvas->SizeX, Canvas->SizeY), OverlayColor);
+	OverlayTile.BlendMode = SE_BLEND_Translucent;
+	Canvas->DrawItem(OverlayTile);
 
 	FLinearColor TitleColor(1.0f, 0.9f, 0.2f, 1.0f);
 	FLinearColor TextColor(0.9f, 0.9f, 0.9f, 0.9f);
@@ -684,7 +686,7 @@ void AFighterHUD::DrawGameScreen(AFighterPawn* Fighter)
 		float PanelX = InstructionsX - 20.0f;
 		float PanelY = CY - 170.0f;
 		
-		FLinearColor PanelColor(0.1f, 0.1f, 0.1f, 0.9f);
+		FLinearColor PanelColor(0.02f, 0.02f, 0.02f, 0.95f);
 		FCanvasTileItem TileItem(FVector2D(PanelX, PanelY), FVector2D(PanelWidth, PanelHeight), PanelColor);
 		TileItem.BlendMode = SE_BLEND_Translucent;
 		Canvas->DrawItem(TileItem);
@@ -715,7 +717,7 @@ void AFighterHUD::DrawGameScreen(AFighterPawn* Fighter)
 		float PanelX = InstructionsX - 20.0f;
 		float PanelY = CY - 170.0f;
 		
-		FLinearColor PanelColor(0.1f, 0.1f, 0.1f, 0.9f);
+		FLinearColor PanelColor(0.02f, 0.02f, 0.02f, 0.95f);
 		FCanvasTileItem TileItem(FVector2D(PanelX, PanelY), FVector2D(PanelWidth, PanelHeight), PanelColor);
 		TileItem.BlendMode = SE_BLEND_Translucent;
 		Canvas->DrawItem(TileItem);
